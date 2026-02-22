@@ -20,7 +20,7 @@ std::wstring strip_quotes(const std::wstring& text);
 std::pair<std::vector<std::wstring>, std::vector<std::wstring>>
 validate_paths(const std::vector<std::wstring>& paths);
 
-// Get config directory (%APPDATA%\FileTabOpener)
+// Get config directory (%APPDATA%\FileTabOpenerW)
 std::wstring get_appdata_dir();
 
 // Get current ISO timestamp (seconds precision)

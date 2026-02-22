@@ -84,9 +84,9 @@ validate_paths(const std::vector<std::wstring>& paths) {
 std::wstring get_appdata_dir() {
     wchar_t buf[MAX_PATH];
     if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, buf))) {
-        return std::wstring(buf) + L"\\FileTabOpener";
+        return std::wstring(buf) + L"\\FileTabOpenerW";
     }
-    return L".\\FileTabOpener";
+    return L".\\FileTabOpenerW";
 }
 
 std::string get_iso_timestamp() {
