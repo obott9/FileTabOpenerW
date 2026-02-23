@@ -274,9 +274,12 @@ void TabGroupSection::load_tabs_from_config() {
         tab_view_.add_tab(g.name);
     }
     auto names = tab_view_.tab_names();
+    LOG_INFO("tab_group", "load_tabs: %d tabs, setting current to '%s'",
+             (int)names.size(), names.empty() ? "" : wide_to_utf8(names[0]).c_str());
     if (!names.empty()) {
         tab_view_.set_current_tab(names[0]);
         current_tab_ = names[0];
+        LOG_INFO("tab_group", "current_tab_ set to '%s'", wide_to_utf8(current_tab_).c_str());
         refresh_listbox();
         load_geometry();
     }

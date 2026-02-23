@@ -138,6 +138,8 @@ void TabView::move_tab(int old_index, int new_index) {
 
 void TabView::layout() {
     if (!hwnd_) return;
+    if (in_layout_) return;  // Prevent reentrancy from SetScrollInfo → WM_SIZE
+    in_layout_ = true;
 
     // Destroy old buttons
     for (HWND btn : buttons_) DestroyWindow(btn);
@@ -147,6 +149,7 @@ void TabView::layout() {
         SCROLLINFO si = {sizeof(SCROLLINFO), SIF_ALL};
         si.nMin = 0; si.nMax = 0; si.nPage = 1;
         SetScrollInfo(hwnd_, SB_VERT, &si, TRUE);
+        in_layout_ = false;
         return;
     }
 
@@ -216,17 +219,18 @@ void TabView::layout() {
     }
 
     update_selection();
+    in_layout_ = false;
 }
 
 void TabView::update_selection() {
+    LOG_DEBUG("tab_view", "update_selection: current_='%s', buttons=%d",
+              wide_to_utf8(current_).c_str(), (int)buttons_.size());
     for (HWND btn : buttons_) {
         wchar_t text[256];
         GetWindowTextW(btn, text, 256);
-        // Bold the selected tab by using owner-draw or just simple approach:
-        // We use a simple approach: change the button style
         bool selected = (text == current_);
-        // Win32 buttons don't have a built-in "selected" look.
-        // We'll use a flat style for unselected and default for selected.
+        LOG_DEBUG("tab_view", "  btn text='%s' selected=%d",
+                  wide_to_utf8(text).c_str(), selected);
         LONG style = GetWindowLongW(btn, GWL_STYLE);
         if (selected) {
             style |= BS_DEFPUSHBUTTON;
