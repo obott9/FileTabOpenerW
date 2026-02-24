@@ -1,6 +1,9 @@
 #include "resource.h"
 #include <winresrc.h>
 
+// Icon (uncomment when app.ico is available)
+// IDI_APP_ICON ICON "app.ico"
+
 // Manifest
 IDR_MANIFEST RT_MANIFEST "app.manifest"
 

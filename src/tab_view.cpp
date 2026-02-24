@@ -136,8 +136,20 @@ void TabView::move_tab(int old_index, int new_index) {
     layout();
 }
 
+static std::wstring escape_ampersand(const std::wstring& s) {
+    std::wstring result;
+    result.reserve(s.size());
+    for (wchar_t c : s) {
+        result += c;
+        if (c == L'&') result += L'&';
+    }
+    return result;
+}
+
 void TabView::layout() {
     if (!hwnd_) return;
+    if (in_layout_) return;
+    in_layout_ = true;
 
     // Destroy old buttons
     for (HWND btn : buttons_) DestroyWindow(btn);
@@ -147,6 +159,7 @@ void TabView::layout() {
         SCROLLINFO si = {sizeof(SCROLLINFO), SIF_ALL};
         si.nMin = 0; si.nMax = 0; si.nPage = 1;
         SetScrollInfo(hwnd_, SB_VERT, &si, TRUE);
+        in_layout_ = false;
         return;
     }
 
@@ -203,7 +216,8 @@ void TabView::layout() {
     for (const auto& row : rows) {
         int x = BTN_PAD_X;
         for (int idx : row.indices) {
-            HWND btn = CreateWindowW(L"BUTTON", infos[idx].name.c_str(),
+            std::wstring label = escape_ampersand(infos[idx].name);
+            HWND btn = CreateWindowW(L"BUTTON", label.c_str(),
                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
                 x, y_offset + BTN_PAD_Y, infos[idx].width, BTN_HEIGHT,
                 hwnd_, (HMENU)(INT_PTR)(BASE_BTN_ID + idx),
@@ -215,16 +229,17 @@ void TabView::layout() {
         y_offset += row_h;
     }
 
+    in_layout_ = false;
     update_selection();
 }
 
 void TabView::update_selection() {
-    for (HWND btn : buttons_) {
-        wchar_t text[256];
-        GetWindowTextW(btn, text, 256);
-        // Bold the selected tab by using owner-draw or just simple approach:
-        // We use a simple approach: change the button style
-        bool selected = (text == current_);
+    for (int i = 0; i < (int)buttons_.size(); ++i) {
+        HWND btn = buttons_[i];
+        // Match by button ID → index into names_, not by button text
+        // (button text has && escaping that differs from names_)
+        int idx = (int)GetWindowLongPtrW(btn, GWL_ID) - BASE_BTN_ID;
+        bool selected = (idx >= 0 && idx < (int)names_.size() && names_[idx] == current_);
         // Win32 buttons don't have a built-in "selected" look.
         // We'll use a flat style for unselected and default for selected.
         LONG style = GetWindowLongW(btn, GWL_STYLE);

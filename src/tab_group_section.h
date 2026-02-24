@@ -25,12 +25,13 @@ public:
     TabView& tab_view() { return tab_view_; }
     bool is_opening() const { return opening_; }
     void set_opening(bool v) { opening_ = v; }
+    void save_geometry();
+    void refresh_texts();
 
 private:
     void load_tabs_from_config();
     void refresh_listbox();
     void load_geometry();
-    void save_geometry();
 
     void on_add_tab();
     void on_delete_tab();

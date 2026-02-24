@@ -30,7 +30,7 @@ struct AppConfig {
     std::string window_geometry = "800x600";
     std::unordered_map<std::string, std::string> settings;
 
-    AppConfig() { settings["use_custom_tk"] = "true"; }
+    AppConfig() = default;
 };
 
 class ConfigManager {

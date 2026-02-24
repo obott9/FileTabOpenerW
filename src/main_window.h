@@ -4,6 +4,7 @@
 #include "tab_group_section.h"
 #include <windows.h>
 #include <memory>
+#include <atomic>
 
 namespace fto {
 
@@ -31,8 +32,13 @@ private:
                               const std::optional<WindowRect>& rect);
     void show_toast();
     void hide_toast();
+    void update_dark_mode();
+    HBRUSH handle_ctlcolor(HDC hdc, HWND ctrl);
 
     ConfigManager& config_;
+    bool dark_mode_ = false;
+    HBRUSH dark_bg_brush_ = nullptr;
+    HBRUSH dark_edit_brush_ = nullptr;
     HWND hwnd_ = nullptr;
     HFONT font_ = nullptr;
 
@@ -52,6 +58,10 @@ private:
 
     // Toast overlay
     HWND toast_hwnd_ = nullptr;
+
+    // State
+    std::atomic<bool> closing_{false};
+    HCURSOR saved_cursor_ = nullptr;
 
     int client_w_ = 0, client_h_ = 0;
 };

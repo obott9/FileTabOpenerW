@@ -133,8 +133,28 @@ void ConfigManager::save() {
     }
     j["settings"] = settings;
 
-    std::ofstream f(path_);
-    f << j.dump(2, ' ', false, json::error_handler_t::replace);
+    // Atomic write: write to tmp file, then rename
+    std::wstring tmp_path = path_ + L".tmp";
+    {
+        std::ofstream f(tmp_path);
+        if (!f.is_open()) {
+            LOG_WARN("config", "Failed to open tmp file for writing");
+            return;
+        }
+        f << j.dump(2, ' ', false, json::error_handler_t::replace);
+        if (f.fail()) {
+            LOG_WARN("config", "Failed to write config to tmp file");
+            return;
+        }
+    }
+    std::error_code ec;
+    std::filesystem::rename(wide_to_utf8(tmp_path), wide_to_utf8(path_), ec);
+    if (ec) {
+        // Fallback: direct write
+        LOG_WARN("config", "Rename failed (%s), falling back to direct write", ec.message().c_str());
+        std::ofstream f(path_);
+        f << j.dump(2, ' ', false, json::error_handler_t::replace);
+    }
     LOG_DEBUG("config", "Saved: %s", wide_to_utf8(path_).c_str());
 }
 

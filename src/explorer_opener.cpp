@@ -164,6 +164,7 @@ static bool open_tabs_uia(
     ComPtr<IUIAutomationElement> add_btn;
     {
         VARIANT prop;
+        VariantInit(&prop);
         prop.vt = VT_BSTR;
         prop.bstrVal = SysAllocString(L"AddButton");
         ComPtr<IUIAutomationCondition> cond;
@@ -213,6 +214,7 @@ static bool open_tabs_uia(
             ComPtr<IUIAutomationElement> auto_suggest;
             {
                 VARIANT prop;
+                VariantInit(&prop);
                 prop.vt = VT_BSTR;
                 prop.bstrVal = SysAllocString(L"PART_AutoSuggestBox");
                 ComPtr<IUIAutomationCondition> cond;
@@ -224,6 +226,7 @@ static bool open_tabs_uia(
             ComPtr<IUIAutomationElement> addr_edit;
             if (auto_suggest) {
                 VARIANT prop;
+                VariantInit(&prop);
                 prop.vt = VT_BSTR;
                 prop.bstrVal = SysAllocString(L"TextBox");
                 ComPtr<IUIAutomationCondition> cond;
@@ -402,11 +405,12 @@ bool open_folders_as_tabs(const std::vector<std::wstring>& paths,
 {
     if (paths.empty()) return false;
 
-    // Deduplicate
+    // Deduplicate (normalize before comparison to catch path variants)
     std::vector<std::wstring> unique_paths;
     std::set<std::wstring> seen;
     for (const auto& p : paths) {
-        if (seen.insert(p).second) unique_paths.push_back(p);
+        std::wstring norm = normalize_path(p);
+        if (seen.insert(norm).second) unique_paths.push_back(p);
     }
 
     LOG_INFO("explorer", "Opening as tabs: %d paths, timeout=%.0fs",

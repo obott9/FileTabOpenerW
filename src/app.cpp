@@ -4,10 +4,34 @@
 #include "utils.h"
 #include "tab_view.h"
 #include <windows.h>
+#include <dwmapi.h>
 #include <objbase.h>
 #include <commctrl.h>
 
+#pragma comment(lib, "dwmapi.lib")
+
 namespace fto {
+
+bool is_dark_mode() {
+    HKEY key;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER,
+            L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+            0, KEY_READ, &key) != ERROR_SUCCESS) {
+        return false;
+    }
+    DWORD value = 1;
+    DWORD size = sizeof(value);
+    RegQueryValueExW(key, L"AppsUseLightTheme", nullptr, nullptr,
+                     reinterpret_cast<LPBYTE>(&value), &size);
+    RegCloseKey(key);
+    return value == 0; // 0 = dark mode
+}
+
+void apply_dark_title_bar(HWND hwnd) {
+    BOOL dark = is_dark_mode() ? TRUE : FALSE;
+    // DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+    DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
+}
 
 App::App() {}
 App::~App() {}
