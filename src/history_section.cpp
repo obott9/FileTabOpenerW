@@ -267,9 +267,6 @@ void HistorySection::show_dropdown() {
             }
             return 0;
         }
-        if (msg == WM_NCDESTROY) {
-            RemoveWindowSubclass(hwnd, DefSubclassProc, DROPDOWN_SUBCLASS_ID);
-        }
         return DefSubclassProc(hwnd, msg, wParam, lParam);
     }, DROPDOWN_SUBCLASS_ID, reinterpret_cast<DWORD_PTR>(this));
 
