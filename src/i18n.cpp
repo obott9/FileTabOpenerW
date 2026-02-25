@@ -252,11 +252,17 @@ static const Entry g_strings[] = {
     {"error.invalid_paths_msg", L"zh_CN", L"\x4EE5\x4E0B\x8DEF\x5F84\x5C06\x88AB\x8DF3\x8FC7\xFF1A\n{paths}"},
 
     // --- Toast ---
-    {"toast.opening_tabs", L"en", L"Opening tabs...\nPlease wait.\nDo not use the keyboard or mouse."},
-    {"toast.opening_tabs", L"ja", L"\x30BF\x30D6\x3092\x5C55\x958B\x4E2D...\n\x3057\x3070\x3089\x304F\x304A\x5F85\x3061\x304F\x3060\x3055\x3044\x3002\n\x30AD\x30FC\x30DC\x30FC\x30C9\x30FB\x30DE\x30A6\x30B9\x3092\x64CD\x4F5C\x3057\x306A\x3044\x3067\x304F\x3060\x3055\x3044"},
-    {"toast.opening_tabs", L"ko", L"\xD0ED \xC5EC\xB294 \xC911...\n\xC7A0\xC2DC\xB9CC \xAE30\xB2E4\xB824 \xC8FC\xC138\xC694.\n\xD0A4\xBCF4\xB4DC\xB098 \xB9C8\xC6B0\xC2A4\xB97C \xC0AC\xC6A9\xD558\xC9C0 \xB9C8\xC138\xC694."},
-    {"toast.opening_tabs", L"zh_TW", L"\x6B63\x5728\x958B\x555F\x5206\x9801...\n\x8ACB\x7A0D\x5019\x3002\n\x8ACB\x52FF\x4F7F\x7528\x9375\x76E4\x6216\x6ED1\x9F20\x3002"},
-    {"toast.opening_tabs", L"zh_CN", L"\x6B63\x5728\x6253\x5F00\x6807\x7B7E...\n\x8BF7\x7A0D\x5019\x3002\n\x8BF7\x52FF\x4F7F\x7528\x952E\x76D8\x6216\x9F20\x6807\x3002"},
+    {"toast.progress_header", L"en", L"Opening tabs... ({current}/{total})"},
+    {"toast.progress_header", L"ja", L"\x30BF\x30D6\x3092\x5C55\x958B\x4E2D... ({current}/{total})"},
+    {"toast.progress_header", L"ko", L"\xD0ED \xC5EC\xB294 \xC911... ({current}/{total})"},
+    {"toast.progress_header", L"zh_TW", L"\x6B63\x5728\x958B\x555F\x5206\x9801... ({current}/{total})"},
+    {"toast.progress_header", L"zh_CN", L"\x6B63\x5728\x6253\x5F00\x6807\x7B7E... ({current}/{total})"},
+
+    {"toast.wait_message", L"en", L"Please wait.\nDo not use the keyboard or mouse."},
+    {"toast.wait_message", L"ja", L"\x3057\x3070\x3089\x304F\x304A\x5F85\x3061\x304F\x3060\x3055\x3044\x3002\n\x30AD\x30FC\x30DC\x30FC\x30C9\x30FB\x30DE\x30A6\x30B9\x3092\x64CD\x4F5C\x3057\x306A\x3044\x3067\x304F\x3060\x3055\x3044"},
+    {"toast.wait_message", L"ko", L"\xC7A0\xC2DC\xB9CC \xAE30\xB2E4\xB824 \xC8FC\xC138\xC694.\n\xD0A4\xBCF4\xB4DC\xB098 \xB9C8\xC6B0\xC2A4\xB97C \xC0AC\xC6A9\xD558\xC9C0 \xB9C8\xC138\xC694."},
+    {"toast.wait_message", L"zh_TW", L"\x8ACB\x7A0D\x5019\x3002\n\x8ACB\x52FF\x4F7F\x7528\x9375\x76E4\x6216\x6ED1\x9F20\x3002"},
+    {"toast.wait_message", L"zh_CN", L"\x8BF7\x7A0D\x5019\x3002\n\x8BF7\x52FF\x4F7F\x7528\x952E\x76D8\x6216\x9F20\x6807\x3002"},
 
     // --- Window geometry ---
     {"window.x", L"en", L"X:"},

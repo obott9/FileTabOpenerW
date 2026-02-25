@@ -9,10 +9,89 @@
 #include <sstream>
 #include <commctrl.h>
 #include <objbase.h>
+#include <shlwapi.h>
 
 namespace fto {
 
 static const wchar_t* MAIN_WINDOW_CLASS = L"FileTabOpenerMainWindow";
+
+// --- Toast overlay custom window class ---
+
+static const wchar_t* TOAST_CLASS = L"FTOToast";
+static bool g_toast_registered = false;
+
+struct ToastPaintInfo {
+    bool dark_mode;
+    HFONT font;
+};
+
+static LRESULT CALLBACK ToastProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+    case WM_NCCREATE: {
+        auto* cs = reinterpret_cast<CREATESTRUCT*>(lParam);
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+        break;
+    }
+    case WM_PAINT: {
+        auto* info = reinterpret_cast<ToastPaintInfo*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        if (!info) break;
+
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+
+        COLORREF bg     = info->dark_mode ? theme::TOAST_BG_DARK     : theme::TOAST_BG_LIGHT;
+        COLORREF fg     = info->dark_mode ? theme::TOAST_FG_DARK     : theme::TOAST_FG_LIGHT;
+        COLORREF border = info->dark_mode ? theme::TOAST_BORDER_DARK : theme::TOAST_BORDER_LIGHT;
+
+        // Fill background
+        HBRUSH bg_brush = CreateSolidBrush(bg);
+        FillRect(hdc, &rc, bg_brush);
+        DeleteObject(bg_brush);
+
+        // Draw border (2px, matching Python highlightthickness=2)
+        HPEN border_pen = CreatePen(PS_SOLID, 2, border);
+        HPEN old_pen = (HPEN)SelectObject(hdc, border_pen);
+        HBRUSH old_brush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+        Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
+        SelectObject(hdc, old_brush);
+        SelectObject(hdc, old_pen);
+        DeleteObject(border_pen);
+
+        // Draw text centered
+        HFONT old_font = info->font ? (HFONT)SelectObject(hdc, info->font) : nullptr;
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, fg);
+
+        wchar_t text[512];
+        GetWindowTextW(hwnd, text, 512);
+
+        // Calculate text height for vertical centering
+        RECT calc_rc = rc;
+        InflateRect(&calc_rc, -16, 0);
+        int text_h = DrawTextW(hdc, text, -1, &calc_rc, DT_CENTER | DT_WORDBREAK | DT_CALCRECT);
+
+        // Draw vertically centered
+        RECT draw_rc = rc;
+        InflateRect(&draw_rc, -16, 0);
+        int y_offset = ((rc.bottom - rc.top) - text_h) / 2;
+        draw_rc.top = y_offset;
+        draw_rc.bottom = y_offset + text_h;
+        DrawTextW(hdc, text, -1, &draw_rc, DT_CENTER | DT_WORDBREAK);
+
+        if (old_font) SelectObject(hdc, old_font);
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    case WM_NCDESTROY: {
+        auto* info = reinterpret_cast<ToastPaintInfo*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        delete info;
+        return 0;
+    }
+    }
+    return DefWindowProcW(hwnd, msg, wParam, lParam);
+}
 
 void MainWindow::register_class() {
     WNDCLASSEXW wc = {sizeof(WNDCLASSEXW)};
@@ -105,6 +184,16 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     case WM_TAB_OPEN_COMPLETE:
         self->on_tab_open_complete();
         return 0;
+    case WM_TAB_OPEN_PROGRESS: {
+        int current = LOWORD(wParam);
+        int total = HIWORD(wParam);
+        auto* path = reinterpret_cast<std::wstring*>(lParam);
+        if (path) {
+            self->update_toast(current, total, *path);
+            delete path;
+        }
+        return 0;
+    }
     case WM_TAB_OPEN_ERROR: {
         // wParam = path string pointer, lParam = error string pointer
         auto* path = reinterpret_cast<std::wstring*>(wParam);
@@ -367,7 +456,7 @@ void MainWindow::open_folders_as_tabs(
     saved_cursor_ = (HCURSOR)SetClassLongPtrW(hwnd_, GCLP_HCURSOR,
         (LONG_PTR)LoadCursorW(nullptr, IDC_WAIT));
     SetCursor(LoadCursorW(nullptr, IDC_WAIT));
-    show_toast();
+    show_toast((int)valid.size());
 
     // Block input while opening
     EnableWindow(hwnd_, FALSE);
@@ -378,7 +467,12 @@ void MainWindow::open_folders_as_tabs(
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
         try {
             fto::open_folders_as_tabs(valid,
-                nullptr, // on_progress
+                [main_hwnd, closing_ptr](int current, int total, const std::wstring& path) {
+                    if (closing_ptr->load()) return;
+                    PostMessageW(main_hwnd, WM_TAB_OPEN_PROGRESS,
+                        MAKEWPARAM(current, total),
+                        (LPARAM)new std::wstring(path));
+                },
                 [main_hwnd, closing_ptr](const std::wstring& p, const std::wstring& e) {
                     if (closing_ptr->load()) return;
                     PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
@@ -420,36 +514,83 @@ void MainWindow::on_tab_open_error(const std::wstring& path, const std::wstring&
         t("error.title").c_str(), MB_ICONERROR);
 }
 
-void MainWindow::show_toast() {
+void MainWindow::show_toast(int total) {
     hide_toast();
 
-    // Create toast font (13pt, matching Python version)
+    // Create toast font (13pt, system font face)
     if (!toast_font_) {
+        NONCLIENTMETRICSW ncm = { sizeof(NONCLIENTMETRICSW) };
+        SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0);
         HDC hdc = GetDC(hwnd_);
-        int height = -MulDiv(13, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+        ncm.lfMessageFont.lfHeight = -MulDiv(13, GetDeviceCaps(hdc, LOGPIXELSY), 72);
         ReleaseDC(hwnd_, hdc);
-        toast_font_ = CreateFontW(height, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+        toast_font_ = CreateFontIndirectW(&ncm.lfMessageFont);
     }
 
-    toast_hwnd_ = CreateWindowExW(0, L"STATIC",
-        t("toast.opening_tabs").c_str(),
-        WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | SS_CENTERIMAGE,
-        0, 0, 0, 0, hwnd_, nullptr, nullptr, nullptr);
-    // Position in center
+    // Register toast class once
+    if (!g_toast_registered) {
+        WNDCLASSW wc = {};
+        wc.lpfnWndProc = ToastProc;
+        wc.hInstance = GetModuleHandleW(nullptr);
+        wc.lpszClassName = TOAST_CLASS;
+        wc.hCursor = LoadCursorW(nullptr, IDC_WAIT);
+        RegisterClassW(&wc);
+        g_toast_registered = true;
+    }
+
+    // Initial text (0/N, no path yet)
+    std::wstring text = build_toast_text(0, total, L"");
+
+    auto* paint_info = new ToastPaintInfo{dark_mode_, toast_font_};
     int tw = client_w_ / 2, th = client_h_ / 2;
-    MoveWindow(toast_hwnd_, (client_w_ - tw) / 2, (client_h_ - th) / 2, tw, th, TRUE);
-    SendMessageW(toast_hwnd_, WM_SETFONT, (WPARAM)toast_font_, TRUE);
-    // Raise to top
+    toast_hwnd_ = CreateWindowExW(0, TOAST_CLASS, text.c_str(),
+        WS_CHILD | WS_VISIBLE,
+        (client_w_ - tw) / 2, (client_h_ - th) / 2, tw, th,
+        hwnd_, nullptr, GetModuleHandleW(nullptr), paint_info);
+
     SetWindowPos(toast_hwnd_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    InvalidateRect(hwnd_, nullptr, TRUE);
+    LOG_INFO("toast", "Toast shown (total=%d)", total);
+}
+
+void MainWindow::update_toast(int current, int total, const std::wstring& path) {
+    if (!toast_hwnd_ || !IsWindow(toast_hwnd_)) return;
+
+    std::wstring text = build_toast_text(current, total, path);
+    SetWindowTextW(toast_hwnd_, text.c_str());
+    InvalidateRect(toast_hwnd_, nullptr, TRUE);
+    LOG_DEBUG("toast", "Progress %d/%d: %s", current, total, wide_to_utf8(path).c_str());
+}
+
+std::wstring MainWindow::build_toast_text(int current, int total, const std::wstring& path) {
+    std::wstring header = t("toast.progress_header", {
+        {"current", std::to_wstring(current)},
+        {"total",   std::to_wstring(total)}
+    });
+    std::wstring footer = t("toast.wait_message");
+
+    // Compact path with PathCompactPathW (Windows standard ellipsis)
+    std::wstring path_line;
+    if (!path.empty()) {
+        int toast_w = client_w_ / 2;
+        int available_w = toast_w - 40; // account for padding (16px each side + margin)
+        wchar_t compact[MAX_PATH];
+        wcscpy_s(compact, path.c_str());
+        HDC hdc = GetDC(toast_hwnd_ ? toast_hwnd_ : hwnd_);
+        HFONT old_font = toast_font_ ? (HFONT)SelectObject(hdc, toast_font_) : nullptr;
+        PathCompactPathW(hdc, compact, available_w);
+        if (old_font) SelectObject(hdc, old_font);
+        ReleaseDC(toast_hwnd_ ? toast_hwnd_ : hwnd_, hdc);
+        path_line = compact;
+    }
+
+    return header + L"\n" + path_line + L"\n" + footer;
 }
 
 void MainWindow::hide_toast() {
     if (toast_hwnd_ && IsWindow(toast_hwnd_)) {
         DestroyWindow(toast_hwnd_);
         toast_hwnd_ = nullptr;
+        LOG_DEBUG("toast", "Toast hidden");
     }
 }
 
