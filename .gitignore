@@ -1,7 +1,7 @@
 build/
 out/
 .vs/
-.vscode/
+.vscode/c_cpp_properties.json
 *.exe
 *.obj
 *.pdb
