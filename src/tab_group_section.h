@@ -16,6 +16,7 @@ public:
         const std::optional<WindowRect>& rect)>;
 
     TabGroupSection(ConfigManager& config, OpenTabsCallback on_open_tabs);
+    ~TabGroupSection() { if (font_) DeleteObject(font_); }
 
     void create(HWND parent, int x, int y, int w, int h);
     void resize(int x, int y, int w, int h);

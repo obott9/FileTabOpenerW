@@ -14,11 +14,11 @@ struct Entry { const char* key; const wchar_t* lang; const wchar_t* text; };
 // clang-format off
 static const Entry g_strings[] = {
     // --- App ---
-    {"app.title", L"en", L"File Tab Opener"},
-    {"app.title", L"ja", L"File Tab Opener"},
-    {"app.title", L"ko", L"File Tab Opener"},
-    {"app.title", L"zh_TW", L"File Tab Opener"},
-    {"app.title", L"zh_CN", L"File Tab Opener"},
+    {"app.title", L"en", L"FileTabOpenerW"},
+    {"app.title", L"ja", L"FileTabOpenerW"},
+    {"app.title", L"ko", L"FileTabOpenerW"},
+    {"app.title", L"zh_TW", L"FileTabOpenerW"},
+    {"app.title", L"zh_CN", L"FileTabOpenerW"},
 
     // --- History section ---
     {"history.label", L"en", L"History:"},

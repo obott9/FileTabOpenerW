@@ -1,6 +1,7 @@
 #include "tab_group_section.h"
 #include "explorer_opener.h"
 #include "input_dialog.h"
+#include "theme.h"
 #include "i18n.h"
 #include "utils.h"
 #include "logger.h"
@@ -21,44 +22,44 @@ TabGroupSection::TabGroupSection(ConfigManager& config, OpenTabsCallback on_open
 void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     parent_ = parent;
     x_ = x; y_ = y; w_ = w; h_ = h;
-    font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    font_ = create_system_message_font();
 
     int cx = x, cy = y;
     int btn_w = 85, btn_h = 26, small_btn = 30, pad = 3;
 
     // --- Tab management bar ---
     add_btn_ = CreateWindowW(L"BUTTON", t("tab.add").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_ADD_BTN, nullptr, nullptr);
     SendMessageW(add_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += btn_w + pad;
 
     del_btn_ = CreateWindowW(L"BUTTON", t("tab.delete").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_DELETE_BTN, nullptr, nullptr);
     SendMessageW(del_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += btn_w + pad;
 
     rename_btn_ = CreateWindowW(L"BUTTON", t("tab.rename").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_RENAME_BTN, nullptr, nullptr);
     SendMessageW(rename_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += btn_w + pad;
 
     copy_btn_ = CreateWindowW(L"BUTTON", t("tab.copy").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_COPY_BTN, nullptr, nullptr);
     SendMessageW(copy_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += btn_w + 10;
 
     left_btn_ = CreateWindowW(L"BUTTON", t("tab.move_left").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, small_btn, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, small_btn, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_MOVE_LEFT_BTN, nullptr, nullptr);
     SendMessageW(left_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += small_btn + pad;
 
     right_btn_ = CreateWindowW(L"BUTTON", t("tab.move_right").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, small_btn, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, small_btn, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_MOVE_RIGHT_BTN, nullptr, nullptr);
     SendMessageW(right_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
 
@@ -115,7 +116,7 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     cx += geom_entry_w + 8;
 
     geom_get_btn_ = CreateWindowW(L"BUTTON", t("window.get_from_explorer").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, 140, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, cx, cy, 140, btn_h, parent,
         (HMENU)(INT_PTR)IDC_GEOM_GET_BTN, nullptr, nullptr);
     SendMessageW(geom_get_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
 
@@ -138,31 +139,31 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     int aby = cy;
 
     move_up_btn_ = CreateWindowW(L"BUTTON", t("path.move_up").c_str(),
-        WS_CHILD | WS_VISIBLE, abx, aby, action_btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, abx, aby, action_btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_PATH_MOVE_UP_BTN, nullptr, nullptr);
     SendMessageW(move_up_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     aby += btn_h + 3;
 
     move_down_btn_ = CreateWindowW(L"BUTTON", t("path.move_down").c_str(),
-        WS_CHILD | WS_VISIBLE, abx, aby, action_btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, abx, aby, action_btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_PATH_MOVE_DOWN_BTN, nullptr, nullptr);
     SendMessageW(move_down_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     aby += btn_h + 3;
 
     add_path_btn_ = CreateWindowW(L"BUTTON", t("path.add").c_str(),
-        WS_CHILD | WS_VISIBLE, abx, aby, action_btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, abx, aby, action_btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_PATH_ADD_BTN, nullptr, nullptr);
     SendMessageW(add_path_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     aby += btn_h + 3;
 
     remove_btn_ = CreateWindowW(L"BUTTON", t("path.remove").c_str(),
-        WS_CHILD | WS_VISIBLE, abx, aby, action_btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, abx, aby, action_btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_PATH_REMOVE_BTN, nullptr, nullptr);
     SendMessageW(remove_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     aby += btn_h + 3;
 
     browse_btn_ = CreateWindowW(L"BUTTON", t("path.browse").c_str(),
-        WS_CHILD | WS_VISIBLE, abx, aby, action_btn_w, btn_h, parent,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, abx, aby, action_btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_PATH_BROWSE_BTN, nullptr, nullptr);
     SendMessageW(browse_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
 
@@ -180,7 +181,7 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
 
     // --- Open as Tabs button ---
     open_btn_ = CreateWindowW(L"BUTTON", t("tab.open_as_tabs").c_str(),
-        WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         x, cy, w, btn_h + 10, parent,
         (HMENU)(INT_PTR)IDC_OPEN_AS_TABS_BTN, nullptr, nullptr);
     SendMessageW(open_btn_, WM_SETFONT, (WPARAM)font_, TRUE);

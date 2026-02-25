@@ -1,4 +1,5 @@
 #include "tab_view.h"
+#include "theme.h"
 #include "logger.h"
 #include "utils.h"
 #include <algorithm>
@@ -21,7 +22,7 @@ void TabView::register_class() {
 void TabView::create(HWND parent, int x, int y, int w, int h, TabChangedCallback cb) {
     parent_ = parent;
     on_tab_changed_ = cb;
-    font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    font_ = create_system_message_font();
 
     hwnd_ = CreateWindowExW(0, TAB_VIEW_CLASS, L"",
         WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL,
@@ -86,6 +87,14 @@ LRESULT CALLBACK TabView::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
             self->on_button_click(LOWORD(wParam));
         }
         return 0;
+    case WM_DRAWITEM: {
+        auto* dis = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
+        if (dis->CtlType == ODT_BUTTON) {
+            self->draw_tab_button(dis);
+            return TRUE;
+        }
+        break;
+    }
     }
     return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
@@ -218,7 +227,7 @@ void TabView::layout() {
         for (int idx : row.indices) {
             std::wstring label = escape_ampersand(infos[idx].name);
             HWND btn = CreateWindowW(L"BUTTON", label.c_str(),
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                 x, y_offset + BTN_PAD_Y, infos[idx].width, BTN_HEIGHT,
                 hwnd_, (HMENU)(INT_PTR)(BASE_BTN_ID + idx),
                 GetModuleHandleW(nullptr), nullptr);
@@ -235,25 +244,28 @@ void TabView::layout() {
 }
 
 void TabView::update_selection() {
-    for (int i = 0; i < (int)buttons_.size(); ++i) {
-        HWND btn = buttons_[i];
-        // Match by button ID → index into names_, not by button text
-        // (button text has && escaping that differs from names_)
-        int idx = (int)GetWindowLongPtrW(btn, GWL_ID) - BASE_BTN_ID;
-        bool selected = (idx >= 0 && idx < (int)names_.size() && names_[idx] == current_);
-        // Win32 buttons don't have a built-in "selected" look.
-        // We'll use a flat style for unselected and default for selected.
-        LONG style = GetWindowLongW(btn, GWL_STYLE);
-        if (selected) {
-            style |= BS_DEFPUSHBUTTON;
-            style &= ~BS_PUSHBUTTON;
-        } else {
-            style |= BS_PUSHBUTTON;
-            style &= ~BS_DEFPUSHBUTTON;
-        }
-        SetWindowLongW(btn, GWL_STYLE, style);
+    for (HWND btn : buttons_) {
         InvalidateRect(btn, nullptr, TRUE);
     }
+}
+
+void TabView::draw_tab_button(const DRAWITEMSTRUCT* dis) {
+    int idx = (int)dis->CtlID - BASE_BTN_ID;
+    bool selected = (idx >= 0 && idx < (int)names_.size() && names_[idx] == current_);
+
+    COLORREF bg, pressed, text;
+    if (selected) {
+        bg      = dark_mode_ ? theme::BTN_BG_DARK      : theme::BTN_BG_LIGHT;
+        pressed = dark_mode_ ? theme::BTN_PRESSED_DARK  : theme::BTN_PRESSED_LIGHT;
+        text    = dark_mode_ ? theme::BTN_TEXT_DARK      : theme::BTN_TEXT_LIGHT;
+    } else {
+        bg      = dark_mode_ ? theme::TAB_UNSEL_BG_DARK      : theme::TAB_UNSEL_BG_LIGHT;
+        pressed = dark_mode_ ? theme::TAB_UNSEL_PRESSED_DARK  : theme::TAB_UNSEL_PRESSED_LIGHT;
+        text    = dark_mode_ ? theme::TAB_UNSEL_TEXT_DARK      : theme::TAB_UNSEL_TEXT_LIGHT;
+    }
+
+    COLORREF parent_bg = dark_mode_ ? theme::PARENT_BG_DARK : GetSysColor(COLOR_3DFACE);
+    draw_themed_button(dis, bg, pressed, text, parent_bg);
 }
 
 void TabView::on_button_click(int btn_id) {

@@ -2,6 +2,7 @@
 #include "config.h"
 #include "history_section.h"
 #include "tab_group_section.h"
+#include "theme.h"
 #include <windows.h>
 #include <memory>
 #include <atomic>
@@ -41,6 +42,7 @@ private:
     HBRUSH dark_edit_brush_ = nullptr;
     HWND hwnd_ = nullptr;
     HFONT font_ = nullptr;
+    HFONT toast_font_ = nullptr;
 
     // Settings bar
     HWND timeout_label_ = nullptr;

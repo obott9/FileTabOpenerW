@@ -114,6 +114,18 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         delete error;
         return 0;
     }
+    case WM_DRAWITEM: {
+        auto* dis = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
+        if (dis->CtlType == ODT_BUTTON) {
+            COLORREF bg = self->dark_mode_ ? theme::BTN_BG_DARK : theme::BTN_BG_LIGHT;
+            COLORREF pressed = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
+            COLORREF text = self->dark_mode_ ? theme::BTN_TEXT_DARK : theme::BTN_TEXT_LIGHT;
+            COLORREF parent_bg = self->dark_mode_ ? theme::PARENT_BG_DARK : GetSysColor(COLOR_3DFACE);
+            draw_themed_button(dis, bg, pressed, text, parent_bg);
+            return TRUE;
+        }
+        break;
+    }
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORLISTBOX: {
@@ -131,8 +143,10 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         self->on_close();
         return 0;
     case WM_DESTROY:
+        if (self->font_) DeleteObject(self->font_);
         if (self->dark_bg_brush_) DeleteObject(self->dark_bg_brush_);
         if (self->dark_edit_brush_) DeleteObject(self->dark_edit_brush_);
+        if (self->toast_font_) DeleteObject(self->toast_font_);
         PostQuitMessage(0);
         return 0;
     }
@@ -140,7 +154,7 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 }
 
 void MainWindow::on_create() {
-    font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    font_ = create_system_message_font();
 
     // --- Settings bar (right-aligned) ---
     // These are created with approximate positions; on_size will fix them.
@@ -408,6 +422,17 @@ void MainWindow::on_tab_open_error(const std::wstring& path, const std::wstring&
 
 void MainWindow::show_toast() {
     hide_toast();
+
+    // Create toast font (13pt, matching Python version)
+    if (!toast_font_) {
+        HDC hdc = GetDC(hwnd_);
+        int height = -MulDiv(13, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+        ReleaseDC(hwnd_, hdc);
+        toast_font_ = CreateFontW(height, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+            DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+    }
+
     toast_hwnd_ = CreateWindowExW(0, L"STATIC",
         t("toast.opening_tabs").c_str(),
         WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | SS_CENTERIMAGE,
@@ -415,7 +440,7 @@ void MainWindow::show_toast() {
     // Position in center
     int tw = client_w_ / 2, th = client_h_ / 2;
     MoveWindow(toast_hwnd_, (client_w_ - tw) / 2, (client_h_ - th) / 2, tw, th, TRUE);
-    SendMessageW(toast_hwnd_, WM_SETFONT, (WPARAM)font_, TRUE);
+    SendMessageW(toast_hwnd_, WM_SETFONT, (WPARAM)toast_font_, TRUE);
     // Raise to top
     SetWindowPos(toast_hwnd_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     InvalidateRect(hwnd_, nullptr, TRUE);
@@ -439,6 +464,11 @@ void MainWindow::update_dark_mode() {
     if (dark_mode_) {
         dark_bg_brush_ = CreateSolidBrush(RGB(0x2B, 0x2B, 0x2B));
         dark_edit_brush_ = CreateSolidBrush(RGB(0x3C, 0x3C, 0x3C));
+    }
+
+    // Propagate dark mode to tab view
+    if (tab_group_) {
+        tab_group_->tab_view().set_dark_mode(dark_mode_);
     }
 
     InvalidateRect(hwnd_, nullptr, TRUE);

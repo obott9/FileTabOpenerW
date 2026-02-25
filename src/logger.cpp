@@ -21,13 +21,6 @@ void Logger::init(const std::wstring& log_dir) {
     log_path_ = log_dir + L"\\debug.log";
     file_.open(log_path_, std::ios::app | std::ios::binary);
     initialized_ = file_.is_open();
-    if (initialized_) {
-        // Also attach a console for INFO output
-        if (AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole()) {
-            FILE* dummy;
-            freopen_s(&dummy, "CONOUT$", "w", stderr);
-        }
-    }
 }
 
 static const char* level_str(LogLevel level) {
@@ -45,8 +38,9 @@ static std::string get_time_str() {
     auto t = std::chrono::system_clock::to_time_t(now);
     std::tm tm_buf{};
     localtime_s(&tm_buf, &t);
-    char buf[16];
-    snprintf(buf, sizeof(buf), "%02d:%02d:%02d",
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d",
+             tm_buf.tm_year + 1900, tm_buf.tm_mon + 1, tm_buf.tm_mday,
              tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
     return buf;
 }
@@ -73,11 +67,6 @@ void Logger::write_line(LogLevel level, const char* module, const std::string& m
     std::lock_guard lock(mutex_);
     auto time = get_time_str();
     auto lstr = level_str(level);
-
-    // Console: INFO and above
-    if (level >= LogLevel::Info) {
-        fprintf(stderr, "%s [%s] %s: %s\n", time.c_str(), lstr, module, message.c_str());
-    }
 
     // File: DEBUG and above
     if (initialized_) {

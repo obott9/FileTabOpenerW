@@ -10,6 +10,7 @@ public:
     using OpenFolderCallback = std::function<void(const std::wstring& path)>;
 
     HistorySection(ConfigManager& config, OpenFolderCallback on_open);
+    ~HistorySection() { if (font_) DeleteObject(font_); }
 
     void create(HWND parent, int x, int y, int w, int h);
     void resize(int x, int y, int w, int h);

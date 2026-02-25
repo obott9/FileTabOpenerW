@@ -1,4 +1,5 @@
 #include "history_section.h"
+#include "theme.h"
 #include "i18n.h"
 #include "utils.h"
 #include "logger.h"
@@ -39,7 +40,7 @@ HistorySection::HistorySection(ConfigManager& config, OpenFolderCallback on_open
 void HistorySection::create(HWND parent, int x, int y, int w, int h) {
     parent_ = parent;
     x_ = x; y_ = y; w_ = w; h_ = h;
-    font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    font_ = create_system_message_font();
 
     int cx = x, btn_w = 80, small_btn_w = 50;
 
@@ -53,21 +54,21 @@ void HistorySection::create(HWND parent, int x, int y, int w, int h) {
     // Buttons from right
     int right_x = x + w;
     clear_btn_ = CreateWindowW(L"BUTTON", t("history.clear").c_str(),
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         right_x - small_btn_w, y, small_btn_w, h, parent,
         (HMENU)(INT_PTR)IDC_HISTORY_CLEAR_BTN, nullptr, nullptr);
     SendMessageW(clear_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     right_x -= small_btn_w + 3;
 
     pin_btn_ = CreateWindowW(L"BUTTON", t("history.pin").c_str(),
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         right_x - small_btn_w, y, small_btn_w, h, parent,
         (HMENU)(INT_PTR)IDC_HISTORY_PIN_BTN, nullptr, nullptr);
     SendMessageW(pin_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     right_x -= small_btn_w + 3;
 
     open_btn_ = CreateWindowW(L"BUTTON", t("history.open_explorer").c_str(),
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         right_x - 130, y, 130, h, parent,
         (HMENU)(INT_PTR)IDC_HISTORY_OPEN_BTN, nullptr, nullptr);
     SendMessageW(open_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
@@ -76,7 +77,7 @@ void HistorySection::create(HWND parent, int x, int y, int w, int h) {
     // Dropdown button
     int dd_w = 24;
     dropdown_btn_ = CreateWindowW(L"BUTTON", L"\x25BC",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         right_x - dd_w, y, dd_w, h, parent,
         (HMENU)(INT_PTR)IDC_HISTORY_DROPDOWN_BTN, nullptr, nullptr);
     SendMessageW(dropdown_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
@@ -228,8 +229,7 @@ void HistorySection::show_dropdown() {
         0, 0, popup_w, popup_h,
         dropdown_popup_, (HMENU)9999, nullptr, nullptr);
 
-    HFONT font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-    SendMessageW(dropdown_list_, WM_SETFONT, (WPARAM)font, TRUE);
+    SendMessageW(dropdown_list_, WM_SETFONT, (WPARAM)font_, TRUE);
 
     for (const auto& e : history) {
         std::wstring prefix = e.pinned ? L"\xD83D\xDCCC " : L"   ";
