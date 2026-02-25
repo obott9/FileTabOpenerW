@@ -3,11 +3,12 @@
     "cmake.generator": "Visual Studio 17 2022",
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.configureOnOpen": true,
-    "cmake.statusbar.advanced": {
-        "variant": { "visibility": "visible" },
-        "buildTarget": { "visibility": "visible" }
-    },
     "cmake.options.statusBarVisibility": "visible",
+    "cmake.options.advanced": {
+        "variant": { "statusBarVisibility": "visible" },
+        "buildTarget": { "statusBarVisibility": "visible" },
+        "launchTarget": { "statusBarVisibility": "hidden" }
+    },
     "cmake.defaultVariants": {
         "buildType": {
             "default": "debug",
