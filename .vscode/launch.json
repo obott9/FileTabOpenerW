@@ -5,24 +5,14 @@
             "name": "Debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/FileTabOpenerW.exe",
+            "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
-            "console": "integratedTerminal",
-            // NOTE: CMake configure + build (Debug) must be done before launching.
-            //       Use Ctrl+Shift+B or "CMake: Build" command first.
-            "preLaunchTask": "CMake: build (Debug)"
-        },
-        {
-            "name": "Release",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Release/FileTabOpenerW.exe",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "preLaunchTask": "CMake: build (Release)"
+            "console": "integratedTerminal"
+            // Build is handled by CMake Tools extension.
+            // Use Ctrl+Shift+B or status bar Build button before F5,
+            // or use CMake Tools' own debug launch (Ctrl+F5).
         }
     ]
 }

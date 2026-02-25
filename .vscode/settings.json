@@ -1,8 +1,17 @@
 {
-    // --- CMake ---
+    // --- CMake Tools ---
     "cmake.generator": "Visual Studio 17 2022",
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.configureOnOpen": true,
+    "cmake.defaultVariants": {
+        "buildType": {
+            "default": "debug",
+            "choices": {
+                "debug": { "short": "Debug", "buildType": "Debug" },
+                "release": { "short": "Release", "buildType": "Release" }
+            }
+        }
+    },
 
     // --- C++ IntelliSense (CMake Tools provides most settings automatically) ---
     "C_Cpp.default.cppStandard": "c++17",
