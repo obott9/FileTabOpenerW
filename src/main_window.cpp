@@ -458,10 +458,11 @@ void MainWindow::open_folders_as_tabs(
     saved_cursor_ = (HCURSOR)SetClassLongPtrW(hwnd_, GCLP_HCURSOR,
         (LONG_PTR)LoadCursorW(nullptr, IDC_WAIT));
     SetCursor(LoadCursorW(nullptr, IDC_WAIT));
-    show_toast((int)valid.size());
 
-    // Block input while opening
+    // Disable input BEFORE showing toast — EnableWindow triggers child
+    // control repaints, which would flash over the toast if done after.
     EnableWindow(hwnd_, FALSE);
+    show_toast((int)valid.size());
 
     HWND main_hwnd = hwnd_;
     std::atomic<bool>* closing_ptr = &closing_;
@@ -545,9 +546,10 @@ void MainWindow::show_toast(int total) {
 
     auto* paint_info = new ToastPaintInfo{dark_mode_, toast_font_};
     int tw = client_w_ / 2, th = client_h_ / 2;
-    // Create hidden, then show + force immediate paint to prevent white flash
+    // Create hidden with WS_CLIPSIBLINGS to prevent sibling controls
+    // from painting over the toast area, then show + force immediate paint.
     toast_hwnd_ = CreateWindowExW(0, TOAST_CLASS, text.c_str(),
-        WS_CHILD,  // NO WS_VISIBLE — show after positioning
+        WS_CHILD | WS_CLIPSIBLINGS,
         (client_w_ - tw) / 2, (client_h_ - th) / 2, tw, th,
         hwnd_, nullptr, GetModuleHandleW(nullptr), paint_info);
 
