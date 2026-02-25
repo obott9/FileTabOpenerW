@@ -137,13 +137,12 @@ static bool open_tabs_uia(
     std::set<HWND> before_set(before_hwnds_vec.begin(), before_hwnds_vec.end());
 
     // Open first path
+    if (on_progress) on_progress(1, (int)paths.size(), paths[0]);
     std::wstring first_path = normalize_path(paths[0]);
     ShellExecuteW(nullptr, L"explore", first_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 
     HWND new_hwnd = find_new_explorer_hwnd(before_set, timeout);
     if (!new_hwnd) return false;
-
-    if (on_progress) on_progress(1, (int)paths.size(), paths[0]);
     if (paths.size() == 1) {
         if (rect) apply_window_rect(new_hwnd, *rect);
         return true;
@@ -186,6 +185,7 @@ static bool open_tabs_uia(
 
     // Open remaining tabs
     for (int i = 1; i < (int)paths.size(); ++i) {
+        if (on_progress) on_progress(i + 1, (int)paths.size(), paths[i]);
         std::wstring norm_path = normalize_path(paths[i]);
         LOG_DEBUG("explorer", "Adding tab [%d/%d]: %s", i + 1, (int)paths.size(),
                   wide_to_utf8(norm_path).c_str());
@@ -298,8 +298,6 @@ static bool open_tabs_uia(
             }
             Sleep(100);
         }
-
-        if (on_progress) on_progress(i + 1, (int)paths.size(), paths[i]);
     }
 
     if (rect) apply_window_rect(new_hwnd, *rect);
@@ -321,11 +319,10 @@ static bool open_tabs_sendinput(
     auto before_hwnds_vec = enum_explorer_hwnds();
     std::set<HWND> before_set(before_hwnds_vec.begin(), before_hwnds_vec.end());
 
+    if (on_progress) on_progress(1, (int)paths.size(), paths[0]);
     ShellExecuteW(nullptr, L"explore", normalize_path(paths[0]).c_str(),
                   nullptr, nullptr, SW_SHOWNORMAL);
     Sleep(1500);
-
-    if (on_progress) on_progress(1, (int)paths.size(), paths[0]);
 
     HWND new_hwnd = find_new_explorer_hwnd(before_set, timeout);
     if (!new_hwnd) return false;
@@ -339,6 +336,7 @@ static bool open_tabs_sendinput(
     Sleep(300);
 
     for (int i = 1; i < (int)paths.size(); ++i) {
+        if (on_progress) on_progress(i + 1, (int)paths.size(), paths[i]);
         std::wstring norm_path = normalize_path(paths[i]);
         LOG_DEBUG("explorer", "SendInput [%d/%d]: %s", i + 1, (int)paths.size(),
                   wide_to_utf8(norm_path).c_str());
@@ -350,7 +348,6 @@ static bool open_tabs_sendinput(
         Sleep(100);
         press_key(VK_RETURN_KEY);
         Sleep(800);
-        if (on_progress) on_progress(i + 1, (int)paths.size(), paths[i]);
     }
 
     if (rect) apply_window_rect(new_hwnd, *rect);
@@ -368,6 +365,7 @@ static bool open_tabs_separate(
 {
     LOG_INFO("explorer", "Opening as separate windows (fallback)");
     for (int i = 0; i < (int)paths.size(); ++i) {
+        if (on_progress) on_progress(i + 1, (int)paths.size(), paths[i]);
         std::wstring norm = normalize_path(paths[i]);
         auto before_vec = enum_explorer_hwnds();
         std::set<HWND> before(before_vec.begin(), before_vec.end());
@@ -376,7 +374,6 @@ static bool open_tabs_separate(
             HWND hwnd = find_new_explorer_hwnd(before, timeout);
             if (hwnd) apply_window_rect(hwnd, *rect);
         }
-        if (on_progress) on_progress(i + 1, (int)paths.size(), paths[i]);
         Sleep(300);
     }
     return true;

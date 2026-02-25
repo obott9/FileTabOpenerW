@@ -31,7 +31,7 @@ private:
     void open_single_folder(const std::wstring& path);
     void open_folders_as_tabs(const std::vector<std::wstring>& paths,
                               const std::optional<WindowRect>& rect);
-    void show_toast(int total);
+    void show_toast(int total, const std::wstring& first_path = L"");
     void update_toast(int current, int total, const std::wstring& path);
     void hide_toast();
     void update_dark_mode();

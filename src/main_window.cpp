@@ -462,7 +462,7 @@ void MainWindow::open_folders_as_tabs(
     // Disable input BEFORE showing toast — EnableWindow triggers child
     // control repaints, which would flash over the toast if done after.
     EnableWindow(hwnd_, FALSE);
-    show_toast((int)valid.size());
+    show_toast((int)valid.size(), valid[0]);
 
     HWND main_hwnd = hwnd_;
     std::atomic<bool>* closing_ptr = &closing_;
@@ -517,7 +517,7 @@ void MainWindow::on_tab_open_error(const std::wstring& path, const std::wstring&
         t("error.title").c_str(), MB_ICONERROR);
 }
 
-void MainWindow::show_toast(int total) {
+void MainWindow::show_toast(int total, const std::wstring& first_path) {
     hide_toast();
 
     // Create toast font (13pt, system font face)
@@ -541,8 +541,8 @@ void MainWindow::show_toast(int total) {
         g_toast_registered = true;
     }
 
-    // Initial text (0/N, no path yet)
-    std::wstring text = build_toast_text(0, total, L"");
+    // Initial text (1/N, first path)
+    std::wstring text = build_toast_text(1, total, first_path);
 
     auto* paint_info = new ToastPaintInfo{dark_mode_, toast_font_};
     int tw = client_w_ / 2, th = client_h_ / 2;
