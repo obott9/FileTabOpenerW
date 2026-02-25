@@ -1,8 +1,8 @@
 #include "resource.h"
 #include <winresrc.h>
 
-// Icon (add app.ico to res/ to enable)
-// IDI_APP_ICON ICON "app.ico"
+// Icon
+IDI_APP_ICON ICON "app.ico"
 
 // Manifest
 IDR_MANIFEST RT_MANIFEST "app.manifest"
