@@ -9,7 +9,7 @@
 // Custom messages
 #define WM_TAB_OPEN_COMPLETE    (WM_APP + 1)
 #define WM_TAB_OPEN_ERROR       (WM_APP + 2)
-#define WM_TAB_OPEN_PROGRESS    (WM_APP + 3)  // TODO: not yet used
+#define WM_TAB_OPEN_PROGRESS    (WM_APP + 3)
 
 // Settings bar
 #define IDC_SETTINGS_TIMEOUT_LABEL  1001

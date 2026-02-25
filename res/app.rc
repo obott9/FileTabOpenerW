@@ -1,7 +1,7 @@
 #include "resource.h"
 #include <winresrc.h>
 
-// Icon (uncomment when app.ico is available)
+// Icon (add app.ico to res/ to enable)
 // IDI_APP_ICON ICON "app.ico"
 
 // Manifest
@@ -22,11 +22,11 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "CompanyName",      "obott9"
-            VALUE "FileDescription",  "File Tab Opener"
+            VALUE "FileDescription",  "FileTabOpenerW"
             VALUE "FileVersion",      "1.0.0.0"
             VALUE "InternalName",     "FileTabOpenerW"
             VALUE "OriginalFilename", "FileTabOpenerW.exe"
-            VALUE "ProductName",      "File Tab Opener"
+            VALUE "ProductName",      "FileTabOpenerW"
             VALUE "ProductVersion",   "1.0.0.0"
         END
     END

@@ -240,7 +240,6 @@ void TabView::layout() {
 
     in_layout_ = false;
     update_selection();
-    in_layout_ = false;
 }
 
 void TabView::update_selection() {

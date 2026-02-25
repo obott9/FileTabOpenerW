@@ -1,4 +1,4 @@
-# File Tab Opener (Windows Native)
+# FileTabOpenerW
 
 Windows 11+ のエクスプローラーでフォルダをタブとして開くためのネイティブ C++ Win32 アプリケーションです。
 
@@ -57,7 +57,7 @@ cmake --build . --config Release
 
 ## ログ
 
-ログは `%APPDATA%\FileTabOpenerW\logs\` に出力されます。ログファイルは日付でローテーションされます。
+ログは `%APPDATA%\FileTabOpenerW\logs\debug.log` に出力されます。ログファイルはサイズベースでローテーションされます（1 MB、最大3世代）。
 
 ## プロジェクト構成
 

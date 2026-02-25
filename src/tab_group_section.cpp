@@ -246,7 +246,7 @@ void TabGroupSection::resize(int x, int y, int w, int h) {
     MoveWindow(open_btn_, x, cy, w, btn_h + 10, TRUE);
 }
 
-bool TabGroupSection::handle_command(WPARAM wParam, LPARAM lParam) {
+bool TabGroupSection::handle_command(WPARAM wParam, LPARAM /*lParam*/) {
     int id = LOWORD(wParam);
     switch (id) {
     case IDC_TAB_ADD_BTN: on_add_tab(); return true;

@@ -42,7 +42,7 @@ void HistorySection::create(HWND parent, int x, int y, int w, int h) {
     x_ = x; y_ = y; w_ = w; h_ = h;
     font_ = create_system_message_font();
 
-    int cx = x, btn_w = 80, small_btn_w = 50;
+    int cx = x, small_btn_w = 50;
 
     // Label
     label_ = CreateWindowW(L"STATIC", t("history.label").c_str(),
@@ -97,7 +97,7 @@ void HistorySection::create(HWND parent, int x, int y, int w, int h) {
 void HistorySection::resize(int x, int y, int w, int h) {
     x_ = x; y_ = y; w_ = w; h_ = h;
     // Recalculate positions
-    int cx = x, btn_w = 80, small_btn_w = 50;
+    int cx = x, small_btn_w = 50;
 
     MoveWindow(label_, cx, y, 55, h, TRUE);
     cx += 55;
@@ -116,7 +116,7 @@ void HistorySection::resize(int x, int y, int w, int h) {
     MoveWindow(entry_, cx, y + 2, entry_w, h - 4, TRUE);
 }
 
-bool HistorySection::handle_command(WPARAM wParam, LPARAM lParam) {
+bool HistorySection::handle_command(WPARAM wParam, LPARAM /*lParam*/) {
     int id = LOWORD(wParam);
     int code = HIWORD(wParam);
 

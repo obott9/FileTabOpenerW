@@ -118,7 +118,7 @@ static bool is_explorer_hwnd(HWND hwnd) {
 static bool open_tabs_uia(
     const std::vector<std::wstring>& paths,
     const ProgressCallback& on_progress,
-    const ErrorCallback& on_error,
+    const ErrorCallback& /*on_error*/,
     float timeout,
     const std::optional<WindowRect>& rect)
 {
@@ -312,7 +312,7 @@ static bool open_tabs_uia(
 static bool open_tabs_sendinput(
     const std::vector<std::wstring>& paths,
     const ProgressCallback& on_progress,
-    const ErrorCallback& on_error,
+    const ErrorCallback& /*on_error*/,
     float timeout,
     const std::optional<WindowRect>& rect)
 {
@@ -362,7 +362,7 @@ static bool open_tabs_sendinput(
 static bool open_tabs_separate(
     const std::vector<std::wstring>& paths,
     const ProgressCallback& on_progress,
-    const ErrorCallback& on_error,
+    const ErrorCallback& /*on_error*/,
     float timeout,
     const std::optional<WindowRect>& rect)
 {

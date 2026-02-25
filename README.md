@@ -1,4 +1,4 @@
-# File Tab Opener (Windows Native)
+# FileTabOpenerW
 
 A native C++ Win32 application for managing and opening folders as Explorer tabs on Windows 11+.
 
@@ -57,7 +57,7 @@ The config file is compatible with the Python version (file_tab_opener).
 
 ## Logging
 
-Logs are written to `%APPDATA%\FileTabOpenerW\logs\`. Log files are rotated by date.
+Logs are written to `%APPDATA%\FileTabOpenerW\logs\debug.log`. Log files are rotated by size (1 MB, up to 3 backups).
 
 ## Project Structure
 

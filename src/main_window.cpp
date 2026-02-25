@@ -39,7 +39,7 @@ void MainWindow::create() {
     if (!geom.empty()) {
         // Format: "WxH+X+Y" or "WxH"
         int gw = 0, gh = 0, gx = 0, gy = 0;
-        if (sscanf(geom.c_str(), "%dx%d+%d+%d", &gw, &gh, &gx, &gy) >= 2) {
+        if (sscanf_s(geom.c_str(), "%dx%d+%d+%d", &gw, &gh, &gx, &gy) >= 2) {
             w = gw; h = gh;
             if (gx || gy) { x = gx; y = gy; }
         }
@@ -172,7 +172,7 @@ void MainWindow::on_create() {
     }
     int saved_timeout = config_.get_timeout();
     std::wstring to_str = std::to_wstring(saved_timeout);
-    int idx = (int)SendMessageW(timeout_combo_, CB_FINDSTRINGEXACT, -1, (LPARAM)to_str.c_str());
+    int idx = (int)SendMessageW(timeout_combo_, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)to_str.c_str());
     if (idx >= 0) SendMessageW(timeout_combo_, CB_SETCURSEL, idx, 0);
     else SendMessageW(timeout_combo_, CB_SETCURSEL, 3, 0); // default 30
 
