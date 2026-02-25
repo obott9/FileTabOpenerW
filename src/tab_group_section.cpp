@@ -40,10 +40,10 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     cx += btn_w + pad;
 
     rename_btn_ = CreateWindowW(L"BUTTON", t("tab.rename").c_str(),
-        WS_CHILD | WS_VISIBLE, cx, cy, 70, btn_h, parent,
+        WS_CHILD | WS_VISIBLE, cx, cy, btn_w, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_RENAME_BTN, nullptr, nullptr);
     SendMessageW(rename_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
-    cx += 70 + pad;
+    cx += btn_w + pad;
 
     copy_btn_ = CreateWindowW(L"BUTTON", t("tab.copy").c_str(),
         WS_CHILD | WS_VISIBLE, cx, cy, btn_w, btn_h, parent,
@@ -51,13 +51,13 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     SendMessageW(copy_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += btn_w + 10;
 
-    left_btn_ = CreateWindowW(L"BUTTON", L"\x25C0",
+    left_btn_ = CreateWindowW(L"BUTTON", t("tab.move_left").c_str(),
         WS_CHILD | WS_VISIBLE, cx, cy, small_btn, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_MOVE_LEFT_BTN, nullptr, nullptr);
     SendMessageW(left_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += small_btn + pad;
 
-    right_btn_ = CreateWindowW(L"BUTTON", L"\x25B6",
+    right_btn_ = CreateWindowW(L"BUTTON", t("tab.move_right").c_str(),
         WS_CHILD | WS_VISIBLE, cx, cy, small_btn, btn_h, parent,
         (HMENU)(INT_PTR)IDC_TAB_MOVE_RIGHT_BTN, nullptr, nullptr);
     SendMessageW(right_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
@@ -79,7 +79,7 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     SendMessageW(geom_x_label_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += 20;
     geom_x_entry_ = CreateWindowW(L"EDIT", L"",
-        WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER, cx, cy, geom_entry_w, btn_h - 2, parent,
+        WS_CHILD | WS_VISIBLE | WS_BORDER, cx, cy, geom_entry_w, btn_h - 2, parent,
         (HMENU)(INT_PTR)IDC_GEOM_X_ENTRY, nullptr, nullptr);
     SendMessageW(geom_x_entry_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += geom_entry_w + 8;
@@ -89,7 +89,7 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     SendMessageW(geom_y_label_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += 20;
     geom_y_entry_ = CreateWindowW(L"EDIT", L"",
-        WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER, cx, cy, geom_entry_w, btn_h - 2, parent,
+        WS_CHILD | WS_VISIBLE | WS_BORDER, cx, cy, geom_entry_w, btn_h - 2, parent,
         (HMENU)(INT_PTR)IDC_GEOM_Y_ENTRY, nullptr, nullptr);
     SendMessageW(geom_y_entry_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += geom_entry_w + 8;
@@ -99,7 +99,7 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     SendMessageW(geom_w_label_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += geom_label_w;
     geom_w_entry_ = CreateWindowW(L"EDIT", L"",
-        WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER, cx, cy, geom_entry_w, btn_h - 2, parent,
+        WS_CHILD | WS_VISIBLE | WS_BORDER, cx, cy, geom_entry_w, btn_h - 2, parent,
         (HMENU)(INT_PTR)IDC_GEOM_W_ENTRY, nullptr, nullptr);
     SendMessageW(geom_w_entry_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += geom_entry_w + 8;
@@ -109,7 +109,7 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
     SendMessageW(geom_h_label_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += geom_label_w;
     geom_h_entry_ = CreateWindowW(L"EDIT", L"",
-        WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER, cx, cy, geom_entry_w, btn_h - 2, parent,
+        WS_CHILD | WS_VISIBLE | WS_BORDER, cx, cy, geom_entry_w, btn_h - 2, parent,
         (HMENU)(INT_PTR)IDC_GEOM_H_ENTRY, nullptr, nullptr);
     SendMessageW(geom_h_entry_, WM_SETFONT, (WPARAM)font_, TRUE);
     cx += geom_entry_w + 8;
@@ -189,26 +189,40 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
 }
 
 void TabGroupSection::resize(int x, int y, int w, int h) {
-    // For simplicity, destroy and recreate on resize
-    // In a production app, we'd move each control individually
     x_ = x; y_ = y; w_ = w; h_ = h;
 
-    // Recalculate layout: the main flexible elements are the listbox and open button
-    int btn_h = 26, pad = 3;
-    int cy = y;
+    int btn_w = 85, btn_h = 26, small_btn = 30, pad = 3;
+    int cx = x, cy = y;
 
-    // Tab management bar stays at top
+    // --- Tab management bar ---
+    MoveWindow(add_btn_, cx, cy, btn_w, btn_h, TRUE); cx += btn_w + pad;
+    MoveWindow(del_btn_, cx, cy, btn_w, btn_h, TRUE); cx += btn_w + pad;
+    MoveWindow(rename_btn_, cx, cy, btn_w, btn_h, TRUE); cx += btn_w + pad;
+    MoveWindow(copy_btn_, cx, cy, btn_w, btn_h, TRUE); cx += btn_w + 10;
+    MoveWindow(left_btn_, cx, cy, small_btn, btn_h, TRUE); cx += small_btn + pad;
+    MoveWindow(right_btn_, cx, cy, small_btn, btn_h, TRUE);
     cy += btn_h + 5;
 
-    // Tab view
+    // --- Tab view ---
     int tab_view_h = TabView::VISIBLE_ROWS * (TabView::BTN_HEIGHT + TabView::BTN_PAD_Y * 2);
     tab_view_.resize(x, cy, w, tab_view_h);
     cy += tab_view_h + 5;
 
-    // Geometry bar
+    // --- Geometry bar ---
+    int geom_entry_w = 55, geom_label_w = 40;
+    cx = x;
+    MoveWindow(geom_x_label_, cx, cy, 20, btn_h, TRUE); cx += 20;
+    MoveWindow(geom_x_entry_, cx, cy, geom_entry_w, btn_h - 2, TRUE); cx += geom_entry_w + 8;
+    MoveWindow(geom_y_label_, cx, cy, 20, btn_h, TRUE); cx += 20;
+    MoveWindow(geom_y_entry_, cx, cy, geom_entry_w, btn_h - 2, TRUE); cx += geom_entry_w + 8;
+    MoveWindow(geom_w_label_, cx, cy, geom_label_w, btn_h, TRUE); cx += geom_label_w;
+    MoveWindow(geom_w_entry_, cx, cy, geom_entry_w, btn_h - 2, TRUE); cx += geom_entry_w + 8;
+    MoveWindow(geom_h_label_, cx, cy, geom_label_w, btn_h, TRUE); cx += geom_label_w;
+    MoveWindow(geom_h_entry_, cx, cy, geom_entry_w, btn_h - 2, TRUE); cx += geom_entry_w + 8;
+    MoveWindow(geom_get_btn_, cx, cy, 140, btn_h, TRUE);
     cy += btn_h + 5;
 
-    // Content area
+    // --- Content area ---
     int action_btn_w = 85;
     int action_area_w = action_btn_w + 10;
     int listbox_w = w - action_area_w;
@@ -432,7 +446,7 @@ void TabGroupSection::on_move_tab_left() {
     if (name.empty()) return;
     auto names = tab_view_.tab_names();
     auto it = std::find(names.begin(), names.end(), name);
-    if (it == names.begin()) return;
+    if (it == names.end() || it == names.begin()) return;
     int idx = (int)(it - names.begin());
     config_.move_tab_group(idx, idx - 1);
     config_.save();
@@ -444,6 +458,7 @@ void TabGroupSection::on_move_tab_right() {
     if (name.empty()) return;
     auto names = tab_view_.tab_names();
     auto it = std::find(names.begin(), names.end(), name);
+    if (it == names.end()) return;
     int idx = (int)(it - names.begin());
     if (idx >= (int)names.size() - 1) return;
     config_.move_tab_group(idx, idx + 1);
@@ -508,7 +523,6 @@ void TabGroupSection::on_move_down() {
 }
 
 void TabGroupSection::on_browse() {
-    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     ComPtr<IFileOpenDialog> pDialog;
     HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER,
                                   IID_PPV_ARGS(&pDialog));
@@ -576,6 +590,28 @@ void TabGroupSection::on_open_as_tabs() {
     LOG_INFO("tab_group", "Opening as tabs: '%s', %d paths",
              wide_to_utf8(current_tab_).c_str(), (int)g->paths.size());
     on_open_tabs_(g->paths, get_window_rect());
+}
+
+void TabGroupSection::refresh_texts() {
+    SetWindowTextW(add_btn_, t("tab.add").c_str());
+    SetWindowTextW(del_btn_, t("tab.delete").c_str());
+    SetWindowTextW(rename_btn_, t("tab.rename").c_str());
+    SetWindowTextW(copy_btn_, t("tab.copy").c_str());
+    SetWindowTextW(left_btn_, t("tab.move_left").c_str());
+    SetWindowTextW(right_btn_, t("tab.move_right").c_str());
+    SetWindowTextW(geom_x_label_, t("window.x").c_str());
+    SetWindowTextW(geom_y_label_, t("window.y").c_str());
+    SetWindowTextW(geom_w_label_, t("window.width").c_str());
+    SetWindowTextW(geom_h_label_, t("window.height").c_str());
+    SetWindowTextW(geom_get_btn_, t("window.get_from_explorer").c_str());
+    SetWindowTextW(move_up_btn_, t("path.move_up").c_str());
+    SetWindowTextW(move_down_btn_, t("path.move_down").c_str());
+    SetWindowTextW(add_path_btn_, t("path.add").c_str());
+    SetWindowTextW(remove_btn_, t("path.remove").c_str());
+    SetWindowTextW(browse_btn_, t("path.browse").c_str());
+    SendMessageW(path_entry_, EM_SETCUEBANNER, FALSE,
+        (LPARAM)t("path.placeholder").c_str());
+    SetWindowTextW(open_btn_, t("tab.open_as_tabs").c_str());
 }
 
 } // namespace fto

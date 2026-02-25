@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <shlobj.h>
+#include <knownfolders.h>
 #include <filesystem>
 #include <chrono>
 #include <iomanip>
@@ -41,18 +42,26 @@ bool is_directory(const std::wstring& path) {
 }
 
 std::wstring normalize_path(const std::wstring& path) {
-    wchar_t buf[MAX_PATH];
-    if (PathCanonicalizeW(buf, path.c_str())) {
-        return buf;
+    try {
+        auto canonical = std::filesystem::weakly_canonical(path);
+        return canonical.wstring();
+    } catch (...) {
+        // Fallback for paths that can't be canonicalized (e.g., UNC)
+        wchar_t buf[MAX_PATH];
+        if (PathCanonicalizeW(buf, path.c_str())) {
+            return buf;
+        }
+        return path;
     }
-    return path;
 }
 
 std::wstring expand_user(const std::wstring& path) {
     if (path.empty() || path[0] != L'~') return path;
-    wchar_t home[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_PROFILE, nullptr, 0, home))) {
-        return std::wstring(home) + path.substr(1);
+    PWSTR home = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, nullptr, &home))) {
+        std::wstring result = std::wstring(home) + path.substr(1);
+        CoTaskMemFree(home);
+        return result;
     }
     return path;
 }

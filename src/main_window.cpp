@@ -1,4 +1,5 @@
 #include "main_window.h"
+#include "app.h"
 #include "explorer_opener.h"
 #include "i18n.h"
 #include "utils.h"
@@ -21,6 +22,10 @@ void MainWindow::register_class() {
     wc.lpszClassName = MAIN_WINDOW_CLASS;
     wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     wc.style = CS_HREDRAW | CS_VREDRAW;
+    // Load custom icon if available, otherwise use default
+    wc.hIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP_ICON));
+    if (!wc.hIcon) wc.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    wc.hIconSm = wc.hIcon;
     RegisterClassExW(&wc);
 }
 
@@ -109,10 +114,25 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         delete error;
         return 0;
     }
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX: {
+        HBRUSH br = self->handle_ctlcolor((HDC)wParam, (HWND)lParam);
+        if (br) return (LRESULT)br;
+        break;
+    }
+    case WM_SETTINGCHANGE:
+        // Detect Windows theme change
+        if (lParam && wcscmp(reinterpret_cast<LPCWSTR>(lParam), L"ImmersiveColorSet") == 0) {
+            self->update_dark_mode();
+        }
+        break;
     case WM_CLOSE:
         self->on_close();
         return 0;
     case WM_DESTROY:
+        if (self->dark_bg_brush_) DeleteObject(self->dark_bg_brush_);
+        if (self->dark_edit_brush_) DeleteObject(self->dark_edit_brush_);
         PostQuitMessage(0);
         return 0;
     }
@@ -179,6 +199,9 @@ void MainWindow::on_create() {
             open_folders_as_tabs(paths, rect);
         });
 
+    // Initialize dark mode
+    update_dark_mode();
+
     // Initial layout will happen in WM_SIZE
 }
 
@@ -243,7 +266,9 @@ void MainWindow::on_size(int w, int h) {
 }
 
 void MainWindow::on_close() {
-    // Save geometry
+    closing_ = true;
+
+    // Save window geometry
     RECT r;
     GetWindowRect(hwnd_, &r);
     int gw = r.right - r.left, gh = r.bottom - r.top;
@@ -251,10 +276,9 @@ void MainWindow::on_close() {
     snprintf(buf, sizeof(buf), "%dx%d+%d+%d", gw, gh, r.left, r.top);
     config_.data().window_geometry = buf;
 
-    // Save tab geometry
+    // Save tab group geometry
     if (tab_group_) {
-        // Trigger geometry save for current tab
-        tab_group_->handle_command(MAKEWPARAM(IDC_GEOM_GET_BTN + 1, 0), 0); // no-op, just save via on_close
+        tab_group_->save_geometry();
     }
 
     config_.save();
@@ -285,11 +309,13 @@ void MainWindow::on_command(WPARAM wParam, LPARAM lParam) {
                 set_language(code);
                 config_.set_setting("language", wide_to_utf8(code));
                 config_.save();
+                // Refresh all control texts
                 SetWindowTextW(hwnd_, t("app.title").c_str());
-                // Full rebuild would require recreating all controls.
-                // For simplicity, just update the title. Full i18n refresh
-                // would require destroying and recreating all child windows.
-                LOG_INFO("main_window", "Language changed to %s (restart for full effect)",
+                SetWindowTextW(timeout_label_, t("settings.timeout").c_str());
+                SetWindowTextW(timeout_unit_, t("settings.timeout_unit").c_str());
+                if (history_) history_->refresh_texts();
+                if (tab_group_) tab_group_->refresh_texts();
+                LOG_INFO("main_window", "Language changed to %s",
                          wide_to_utf8(code).c_str());
             }
         }
@@ -322,34 +348,53 @@ void MainWindow::open_folders_as_tabs(
     if (valid.empty()) return;
 
     float timeout = (float)config_.get_timeout();
+
+    // Set wait cursor on the window class
+    saved_cursor_ = (HCURSOR)SetClassLongPtrW(hwnd_, GCLP_HCURSOR,
+        (LONG_PTR)LoadCursorW(nullptr, IDC_WAIT));
     SetCursor(LoadCursorW(nullptr, IDC_WAIT));
     show_toast();
 
+    // Block input while opening
+    EnableWindow(hwnd_, FALSE);
+
     HWND main_hwnd = hwnd_;
-    std::thread([valid, rect, timeout, main_hwnd]() {
+    std::atomic<bool>* closing_ptr = &closing_;
+    std::thread([valid, rect, timeout, main_hwnd, closing_ptr]() {
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
         try {
             fto::open_folders_as_tabs(valid,
                 nullptr, // on_progress
-                [main_hwnd](const std::wstring& p, const std::wstring& e) {
+                [main_hwnd, closing_ptr](const std::wstring& p, const std::wstring& e) {
+                    if (closing_ptr->load()) return;
                     PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
                         (WPARAM)new std::wstring(p),
                         (LPARAM)new std::wstring(e));
                 },
                 timeout, rect);
         } catch (const std::exception& e) {
-            std::wstring err = utf8_to_wide(e.what());
-            PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
-                (WPARAM)new std::wstring(L""),
-                (LPARAM)new std::wstring(err));
+            if (!closing_ptr->load()) {
+                std::wstring err = utf8_to_wide(e.what());
+                PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
+                    (WPARAM)new std::wstring(L""),
+                    (LPARAM)new std::wstring(err));
+            }
         }
         CoUninitialize();
-        PostMessageW(main_hwnd, WM_TAB_OPEN_COMPLETE, 0, 0);
+        if (!closing_ptr->load()) {
+            PostMessageW(main_hwnd, WM_TAB_OPEN_COMPLETE, 0, 0);
+        }
     }).detach();
 }
 
 void MainWindow::on_tab_open_complete() {
+    EnableWindow(hwnd_, TRUE);
     hide_toast();
+    // Restore cursor
+    if (saved_cursor_) {
+        SetClassLongPtrW(hwnd_, GCLP_HCURSOR, (LONG_PTR)saved_cursor_);
+        saved_cursor_ = nullptr;
+    }
     SetCursor(LoadCursorW(nullptr, IDC_ARROW));
     if (tab_group_) tab_group_->set_opening(false);
     LOG_INFO("main_window", "Tab opening complete");
@@ -365,7 +410,7 @@ void MainWindow::show_toast() {
     hide_toast();
     toast_hwnd_ = CreateWindowExW(0, L"STATIC",
         t("toast.opening_tabs").c_str(),
-        WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+        WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | SS_CENTERIMAGE,
         0, 0, 0, 0, hwnd_, nullptr, nullptr, nullptr);
     // Position in center
     int tw = client_w_ / 2, th = client_h_ / 2;
@@ -381,6 +426,44 @@ void MainWindow::hide_toast() {
         DestroyWindow(toast_hwnd_);
         toast_hwnd_ = nullptr;
     }
+}
+
+void MainWindow::update_dark_mode() {
+    dark_mode_ = is_dark_mode();
+    apply_dark_title_bar(hwnd_);
+
+    // Recreate brushes
+    if (dark_bg_brush_) { DeleteObject(dark_bg_brush_); dark_bg_brush_ = nullptr; }
+    if (dark_edit_brush_) { DeleteObject(dark_edit_brush_); dark_edit_brush_ = nullptr; }
+
+    if (dark_mode_) {
+        dark_bg_brush_ = CreateSolidBrush(RGB(0x2B, 0x2B, 0x2B));
+        dark_edit_brush_ = CreateSolidBrush(RGB(0x3C, 0x3C, 0x3C));
+    }
+
+    InvalidateRect(hwnd_, nullptr, TRUE);
+    LOG_INFO("main_window", "Dark mode: %s", dark_mode_ ? "on" : "off");
+}
+
+HBRUSH MainWindow::handle_ctlcolor(HDC hdc, HWND ctrl) {
+    if (!dark_mode_) return nullptr;
+
+    // Edit controls get a slightly lighter background
+    wchar_t cls[64];
+    GetClassNameW(ctrl, cls, 64);
+    bool is_edit = (wcscmp(cls, L"Edit") == 0);
+    bool is_listbox = (wcscmp(cls, L"ListBox") == 0);
+
+    SetTextColor(hdc, RGB(0xFF, 0xFF, 0xFF));
+    SetBkMode(hdc, TRANSPARENT);
+
+    if (is_edit || is_listbox) {
+        SetBkColor(hdc, RGB(0x3C, 0x3C, 0x3C));
+        return dark_edit_brush_;
+    }
+
+    SetBkColor(hdc, RGB(0x2B, 0x2B, 0x2B));
+    return dark_bg_brush_;
 }
 
 } // namespace fto

@@ -42,6 +42,7 @@ target_link_libraries(FileTabOpenerW PRIVATE
     uiautomationcore
     comdlg32
     shell32
+    dwmapi
 )
 
 # MSVC specific settings

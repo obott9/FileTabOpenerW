@@ -15,6 +15,7 @@ public:
     void resize(int x, int y, int w, int h);
     bool handle_command(WPARAM wParam, LPARAM lParam);
     bool is_created() const { return entry_ != nullptr && IsWindow(entry_); }
+    void refresh_texts();
 
 private:
     void on_open();

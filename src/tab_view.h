@@ -48,7 +48,7 @@ private:
     HFONT font_ = nullptr;
     int total_height_ = 0;
     int scroll_pos_ = 0;
-    bool in_layout_ = false;
+    bool in_layout_ = false;  // Prevent reentrancy from SetScrollInfo -> WM_SIZE
 
     static constexpr int BASE_BTN_ID = 5000;
 };

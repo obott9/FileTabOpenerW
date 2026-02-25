@@ -237,21 +237,13 @@ void HistorySection::show_dropdown() {
         SendMessageW(dropdown_list_, LB_ADDSTRING, 0, (LPARAM)item.c_str());
     }
 
-    // Subclass the listbox to handle selection
-    SetWindowLongPtrW(dropdown_list_, GWLP_USERDATA,
-        reinterpret_cast<LONG_PTR>(this));
-
-    // We handle LBN_SELCHANGE in the dropdown's parent (dropdown_popup_)
-    // Override the dropdown proc to forward
-    SetWindowLongPtrW(dropdown_popup_, GWLP_USERDATA,
-        reinterpret_cast<LONG_PTR>(this));
-
-    // Patch the dropdown proc to handle listbox commands
-    static WNDPROC s_orig_proc = nullptr;
-    s_orig_proc = (WNDPROC)GetWindowLongPtrW(dropdown_popup_, GWLP_WNDPROC);
-    static auto subclass_proc = [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT {
-        auto* self = reinterpret_cast<HistorySection*>(
-            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+    // Subclass the dropdown popup to handle listbox commands
+    static constexpr UINT_PTR DROPDOWN_SUBCLASS_ID = 1;
+    SetWindowSubclass(dropdown_popup_, [](
+        HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam,
+        UINT_PTR /*uIdSubclass*/, DWORD_PTR dwRefData) -> LRESULT
+    {
+        auto* self = reinterpret_cast<HistorySection*>(dwRefData);
         if (msg == WM_COMMAND && HIWORD(wParam) == LBN_SELCHANGE && self) {
             int sel = (int)SendMessageW(self->dropdown_list_, LB_GETCURSEL, 0, 0);
             if (sel >= 0) {
@@ -275,10 +267,11 @@ void HistorySection::show_dropdown() {
             }
             return 0;
         }
-        return CallWindowProcW(s_orig_proc, hwnd, msg, wParam, lParam);
-    };
-    WNDPROC proc = subclass_proc;
-    SetWindowLongPtrW(dropdown_popup_, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(proc));
+        if (msg == WM_NCDESTROY) {
+            RemoveWindowSubclass(hwnd, DefSubclassProc, DROPDOWN_SUBCLASS_ID);
+        }
+        return DefSubclassProc(hwnd, msg, wParam, lParam);
+    }, DROPDOWN_SUBCLASS_ID, reinterpret_cast<DWORD_PTR>(this));
 
     SetFocus(dropdown_list_);
 }
@@ -289,6 +282,15 @@ void HistorySection::close_dropdown() {
         dropdown_popup_ = nullptr;
         dropdown_list_ = nullptr;
     }
+}
+
+void HistorySection::refresh_texts() {
+    SetWindowTextW(label_, t("history.label").c_str());
+    SetWindowTextW(open_btn_, t("history.open_explorer").c_str());
+    SetWindowTextW(pin_btn_, t("history.pin").c_str());
+    SetWindowTextW(clear_btn_, t("history.clear").c_str());
+    SendMessageW(entry_, EM_SETCUEBANNER, FALSE,
+        (LPARAM)t("path.placeholder").c_str());
 }
 
 } // namespace fto

@@ -2,8 +2,13 @@
 #include "config.h"
 #include "main_window.h"
 #include <memory>
+#include <windows.h>
 
 namespace fto {
+
+// Dark mode detection
+bool is_dark_mode();
+void apply_dark_title_bar(HWND hwnd);
 
 class App {
 public:

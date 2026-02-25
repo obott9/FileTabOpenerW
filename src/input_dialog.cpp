@@ -120,6 +120,12 @@ std::optional<std::wstring> show_input_dialog(
 
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
+        // Handle Escape regardless of focus
+        if (msg.message == WM_KEYDOWN && msg.wParam == VK_ESCAPE) {
+            data.ok = false;
+            DestroyWindow(dlg);
+            continue;
+        }
         if (!IsDialogMessageW(dlg, &msg)) {
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
