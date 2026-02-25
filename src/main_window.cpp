@@ -545,12 +545,15 @@ void MainWindow::show_toast(int total) {
 
     auto* paint_info = new ToastPaintInfo{dark_mode_, toast_font_};
     int tw = client_w_ / 2, th = client_h_ / 2;
+    // Create hidden, then show + force immediate paint to prevent white flash
     toast_hwnd_ = CreateWindowExW(0, TOAST_CLASS, text.c_str(),
-        WS_CHILD | WS_VISIBLE,
+        WS_CHILD,  // NO WS_VISIBLE — show after positioning
         (client_w_ - tw) / 2, (client_h_ - th) / 2, tw, th,
         hwnd_, nullptr, GetModuleHandleW(nullptr), paint_info);
 
-    SetWindowPos(toast_hwnd_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    SetWindowPos(toast_hwnd_, HWND_TOP, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    UpdateWindow(toast_hwnd_);  // Force synchronous WM_PAINT before returning
     LOG_INFO("toast", "Toast shown (total=%d)", total);
 }
 
