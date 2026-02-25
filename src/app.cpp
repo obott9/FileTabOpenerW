@@ -49,7 +49,7 @@ bool App::init() {
     InitCommonControlsEx(&icc);
 
     // Initialize logger
-    std::wstring log_dir = get_appdata_dir() + L"\\logs";
+    std::wstring log_dir = get_appdata_dir();
     Logger::instance().init(log_dir);
     LOG_INFO("app", "=== FileTabOpenerW starting ===");
 
