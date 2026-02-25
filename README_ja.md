@@ -1,5 +1,7 @@
 # FileTabOpenerW
 
+[English](README.md) | [한국어](README_ko.md) | [繁體中文](README_zh_TW.md) | [简体中文](README_zh_CN.md)
+
 Windows 11+ のエクスプローラーでフォルダをタブとして開くためのネイティブ C++ Win32 アプリケーションです。
 
 [file_tab_opener](https://github.com/obott9/file_tab_opener) (Python/Tk) の Windows ネイティブ移植版で、純粋な Win32 API で構築されており、依存関係が少なく高速に起動します。
@@ -57,7 +59,7 @@ cmake --build . --config Release
 
 ## ログ
 
-ログは `%APPDATA%\FileTabOpenerW\logs\debug.log` に出力されます。ログファイルはサイズベースでローテーションされます（1 MB、最大3世代）。
+ログは `%APPDATA%\FileTabOpenerW\debug.log` に出力されます。ログファイルはサイズベースでローテーションされます（1 MB、最大3世代）。
 
 ## プロジェクト構成
 

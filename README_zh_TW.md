@@ -1,0 +1,92 @@
+# FileTabOpenerW
+
+[English](README.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [简体中文](README_zh_CN.md)
+
+用於在 Windows 11+ 的檔案總管中以分頁方式開啟資料夾的原生 C++ Win32 應用程式。
+
+這是 [file_tab_opener](https://github.com/obott9/file_tab_opener) (Python/Tk) 的 Windows 原生移植版，使用純 Win32 API 構建，依賴性少，啟動速度快。
+
+## 功能
+
+- **分頁群組管理** - 建立、重新命名、複製、刪除及排序分頁群組
+- **一鍵開啟** - 將分頁群組中的所有資料夾在一個檔案總管視窗中以分頁方式開啟
+- **資料夾歷史** - 最近開啟的資料夾記錄（支援釘選）
+- **視窗位置** - 按分頁群組儲存及還原檔案總管的位置和大小
+- **多螢幕** - 支援多螢幕環境的負座標
+- **深色模式** - 自動跟隨 Windows 深色/淺色主題
+- **多語言支援** - 英語、日語、韓語、繁體/簡體中文
+- **可攜式設定** - JSON 設定檔位於 `%APPDATA%\FileTabOpenerW`
+
+## 系統需求
+
+- Windows 11 或更新版本（Windows 10 可能可以運行，但檔案總管分頁功能需要 Win11 22H2+）
+- MSVC 建置工具（Visual Studio 2019+ 或 Build Tools for Visual Studio）
+- CMake 3.20+
+
+## 建置
+
+```bash
+mkdir build && cd build
+cmake .. -G "Visual Studio 17 2022"
+cmake --build . --config Release
+```
+
+執行檔將產生於 `build/Release/FileTabOpenerW.exe`。
+
+## 使用方式
+
+1. 啟動 `FileTabOpenerW.exe`
+2. 使用 **+ 新增分頁** 建立分頁群組
+3. 透過路徑輸入欄或 **瀏覽...** 新增資料夾路徑
+4. 視需要使用 **從檔案總管取得** 設定視窗位置
+5. 點擊 **以分頁開啟** 將所有資料夾在檔案總管中以分頁方式開啟
+
+### 運作方式
+
+應用程式使用多種策略來開啟檔案總管分頁：
+
+1. **UI Automation (UIA)** - 主要方法。使用 Windows UI Automation API 尋找檔案總管的「新增分頁」按鈕和網址列，以程式方式建立分頁並導覽至各路徑。
+2. **SendInput** - 備用方法。模擬 Ctrl+T（新增分頁）、Ctrl+L（網址列焦點），輸入路徑後按 Enter。
+3. **個別視窗** - 最終手段。以個別檔案總管視窗開啟每個資料夾。
+
+## 設定
+
+設定以 JSON 格式儲存：
+
+- **Windows**: `%APPDATA%\FileTabOpenerW\config.json`
+
+設定檔與 Python 版（file_tab_opener）相容。
+
+## 記錄檔
+
+記錄檔輸出至 `%APPDATA%\FileTabOpenerW\debug.log`。記錄檔按大小進行輪替（1 MB，最多 3 個備份）。
+
+## 專案結構
+
+```
+FileTabOpenerW/
+  CMakeLists.txt
+  src/
+    main.cpp              # 進入點
+    app.h/cpp             # 應用程式生命週期、深色模式偵測
+    config.h/cpp          # JSON 設定 (nlohmann/json)
+    main_window.h/cpp     # 主視窗（含設定列）
+    history_section.h/cpp # 資料夾歷史（含下拉選單）
+    tab_group_section.h/cpp # 分頁群組管理 UI
+    tab_view.h/cpp        # 自訂分頁按鈕列（支援捲動）
+    input_dialog.h/cpp    # 模態輸入對話方塊
+    explorer_opener.h/cpp # 檔案總管分頁自動化 (UIA/SendInput)
+    i18n.h/cpp            # 多語言支援
+    utils.h/cpp           # 字串轉換、路徑工具
+    logger.h/cpp          # 檔案記錄器
+  res/
+    resource.h            # 資源 ID
+    app.rc                # 版本資訊、資訊清單
+    app.manifest          # Common Controls v6、DPI 感知
+  include/
+    nlohmann/json.hpp     # JSON 函式庫（僅標頭檔）
+```
+
+## 授權
+
+[MIT License](LICENSE)
