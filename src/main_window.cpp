@@ -32,6 +32,8 @@ static LRESULT CALLBACK ToastProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
         break;
     }
+    case WM_ERASEBKGND:
+        return TRUE; // We fill the entire background in WM_PAINT
     case WM_PAINT: {
         auto* info = reinterpret_cast<ToastPaintInfo*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
         if (!info) break;
