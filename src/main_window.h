@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <memory>
 #include <atomic>
+#include <thread>
 
 namespace fto {
 
@@ -38,6 +39,7 @@ private:
     HBRUSH handle_ctlcolor(HDC hdc, HWND ctrl);
 
     std::wstring build_toast_text(int current, int total, const std::wstring& path);
+    void join_open_thread();
 
     ConfigManager& config_;
     bool dark_mode_ = false;
@@ -66,6 +68,7 @@ private:
 
     // State
     std::atomic<bool> closing_{false};
+    std::thread open_thread_;
     HCURSOR saved_cursor_ = nullptr;
 
     int client_w_ = 0, client_h_ = 0;

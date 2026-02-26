@@ -67,13 +67,12 @@ void ConfigManager::load() {
             }
         }
 
+        data_.config_version = j.value("config_version", 1);
         data_.window_geometry = j.value("window_geometry", "800x600");
 
         if (j.contains("settings") && j["settings"].is_object()) {
             for (auto& [k, v] : j["settings"].items()) {
-                if (v.is_string()) data_.settings[k] = v.get<std::string>();
-                else if (v.is_number_integer()) data_.settings[k] = std::to_string(v.get<int>());
-                else if (v.is_boolean()) data_.settings[k] = v.get<bool>() ? "true" : "false";
+                data_.settings[k] = v;  // preserve native JSON types
             }
         }
 
@@ -118,18 +117,13 @@ void ConfigManager::save() {
         groups.push_back(gj);
     }
     j["tab_groups"] = groups;
+    j["config_version"] = data_.config_version;
     j["window_geometry"] = data_.window_geometry;
 
-    // Settings
+    // Settings — values are already native JSON types
     json settings;
     for (const auto& [k, v] : data_.settings) {
-        // Try to preserve numeric/bool types for Python compat
-        if (v == "true") settings[k] = true;
-        else if (v == "false") settings[k] = false;
-        else {
-            try { settings[k] = std::stoi(v); }
-            catch (...) { settings[k] = v; }
-        }
+        settings[k] = v;
     }
     j["settings"] = settings;
 
@@ -337,18 +331,32 @@ void ConfigManager::move_path_in_group(const std::wstring& group_name, int old_i
 int ConfigManager::get_timeout() const {
     auto it = data_.settings.find("timeout");
     if (it != data_.settings.end()) {
-        try { return std::stoi(it->second); }
-        catch (...) {}
+        const auto& v = it->second;
+        if (v.is_number_integer()) return v.get<int>();
+        if (v.is_string()) {
+            try { return std::stoi(v.get<std::string>()); }
+            catch (...) {}
+        }
     }
     return 30;
 }
 
 std::string ConfigManager::get_setting(const std::string& key, const std::string& default_val) const {
     auto it = data_.settings.find(key);
-    return (it != data_.settings.end()) ? it->second : default_val;
+    if (it == data_.settings.end()) return default_val;
+    const auto& v = it->second;
+    if (v.is_string()) return v.get<std::string>();
+    if (v.is_number_integer()) return std::to_string(v.get<int>());
+    if (v.is_boolean()) return v.get<bool>() ? "true" : "false";
+    return default_val;
 }
 
 void ConfigManager::set_setting(const std::string& key, const std::string& value) {
+    // Store as native JSON type when possible
+    if (value == "true") { data_.settings[key] = true; return; }
+    if (value == "false") { data_.settings[key] = false; return; }
+    try { data_.settings[key] = std::stoi(value); return; }
+    catch (...) {}
     data_.settings[key] = value;
 }
 

@@ -10,8 +10,33 @@
 #include <commctrl.h>
 #include <objbase.h>
 #include <shlwapi.h>
+#include <algorithm>
 
 namespace fto {
+
+// Layout constants (W5: extract magic numbers)
+namespace layout {
+    constexpr int PAD            = 10;   // Standard padding
+    constexpr int ROW_H          = 28;   // Standard row height
+    constexpr int COMBO_H        = 22;   // Combobox visible height
+    constexpr int TOP_MARGIN     = 5;    // Settings bar top margin
+    constexpr int SECTION_GAP    = 5;    // Gap between sections
+    constexpr int SEPARATOR_H    = 2;    // Separator line height
+    constexpr int SEPARATOR_GAP  = 7;    // Gap after separator
+    constexpr int BOTTOM_MARGIN  = 5;    // Bottom padding
+    constexpr int LANG_COMBO_W   = 100;  // Language combo width
+    constexpr int LANG_LABEL_W   = 20;   // Language label (globe) width
+    constexpr int TO_UNIT_W      = 30;   // Timeout unit label width
+    constexpr int TO_COMBO_W     = 50;   // Timeout combo width
+    constexpr int TO_LABEL_W     = 70;   // Timeout label width
+    constexpr int CONTROL_GAP    = 3;    // Small gap between controls
+    constexpr int SECTION_MARGIN = 10;   // Gap between setting groups
+    constexpr int MIN_WINDOW_W   = 600;  // Minimum window width
+    constexpr int MIN_WINDOW_H   = 400;  // Minimum window height
+    constexpr int TOAST_PAD      = 40;   // Toast internal padding
+    constexpr int TOAST_MIN_PATH_W = 60; // Min width for compact path
+    constexpr int TOAST_FONT_PT  = 13;   // Toast font size (pt)
+}
 
 static const wchar_t* MAIN_WINDOW_CLASS = L"FileTabOpenerMainWindow";
 
@@ -176,8 +201,8 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         return 0;
     case WM_GETMINMAXINFO: {
         auto* mmi = reinterpret_cast<MINMAXINFO*>(lParam);
-        mmi->ptMinTrackSize.x = 600;
-        mmi->ptMinTrackSize.y = 400;
+        mmi->ptMinTrackSize.x = layout::MIN_WINDOW_W;
+        mmi->ptMinTrackSize.y = layout::MIN_WINDOW_H;
         return 0;
     }
     case WM_COMMAND:
@@ -311,55 +336,50 @@ void MainWindow::on_create() {
 }
 
 void MainWindow::on_size(int w, int h) {
+    using namespace layout;
     client_w_ = w;
     client_h_ = h;
-    int pad = 10, row_h = 28;
-    int cy = 5;
+    int cy = TOP_MARGIN;
 
     // Settings bar (right-aligned)
-    int right = w - pad;
-    int combo_h = 22;
+    int right = w - PAD;
 
     // Language combo (rightmost)
-    int lang_w = 100;
-    MoveWindow(lang_combo_, right - lang_w, cy, lang_w, combo_h + 100, TRUE);
-    right -= lang_w + 3;
-    MoveWindow(lang_label_, right - 20, cy, 20, row_h, TRUE);
-    right -= 20 + 10;
+    MoveWindow(lang_combo_, right - LANG_COMBO_W, cy, LANG_COMBO_W, COMBO_H + 100, TRUE);
+    right -= LANG_COMBO_W + CONTROL_GAP;
+    MoveWindow(lang_label_, right - LANG_LABEL_W, cy, LANG_LABEL_W, ROW_H, TRUE);
+    right -= LANG_LABEL_W + SECTION_MARGIN;
 
     // Timeout
-    int unit_w = 30;
-    MoveWindow(timeout_unit_, right - unit_w, cy, unit_w, row_h, TRUE);
-    right -= unit_w + 1;
-    int to_combo_w = 50;
-    MoveWindow(timeout_combo_, right - to_combo_w, cy, to_combo_w, combo_h + 100, TRUE);
-    right -= to_combo_w + 3;
-    int to_label_w = 70;
-    MoveWindow(timeout_label_, right - to_label_w, cy, to_label_w, row_h, TRUE);
+    MoveWindow(timeout_unit_, right - TO_UNIT_W, cy, TO_UNIT_W, ROW_H, TRUE);
+    right -= TO_UNIT_W + 1;
+    MoveWindow(timeout_combo_, right - TO_COMBO_W, cy, TO_COMBO_W, COMBO_H + 100, TRUE);
+    right -= TO_COMBO_W + CONTROL_GAP;
+    MoveWindow(timeout_label_, right - TO_LABEL_W, cy, TO_LABEL_W, ROW_H, TRUE);
 
-    cy += row_h + 5;
+    cy += ROW_H + SECTION_GAP;
 
     // History section
     if (history_) {
-        if (!history_->is_created()) {  // Not yet created
-            history_->create(hwnd_, pad, cy, w - pad * 2, row_h);
+        if (!history_->is_created()) {
+            history_->create(hwnd_, PAD, cy, w - PAD * 2, ROW_H);
         } else {
-            history_->resize(pad, cy, w - pad * 2, row_h);
+            history_->resize(PAD, cy, w - PAD * 2, ROW_H);
         }
     }
-    cy += row_h + 5;
+    cy += ROW_H + SECTION_GAP;
 
     // Separator
-    MoveWindow(separator_, pad, cy, w - pad * 2, 2, TRUE);
-    cy += 7;
+    MoveWindow(separator_, PAD, cy, w - PAD * 2, SEPARATOR_H, TRUE);
+    cy += SEPARATOR_GAP;
 
     // Tab group section (fills the rest)
-    int remaining = h - cy - 5;
+    int remaining = h - cy - BOTTOM_MARGIN;
     if (tab_group_) {
         if (!IsWindow(tab_group_->tab_view().hwnd())) {
-            tab_group_->create(hwnd_, pad, cy, w - pad * 2, remaining);
+            tab_group_->create(hwnd_, PAD, cy, w - PAD * 2, remaining);
         } else {
-            tab_group_->resize(pad, cy, w - pad * 2, remaining);
+            tab_group_->resize(PAD, cy, w - PAD * 2, remaining);
         }
     }
 
@@ -372,6 +392,7 @@ void MainWindow::on_size(int w, int h) {
 
 void MainWindow::on_close() {
     closing_ = true;
+    join_open_thread();  // wait for background thread before cleanup
 
     // Save window geometry
     RECT r;
@@ -466,23 +487,26 @@ void MainWindow::open_folders_as_tabs(
 
     HWND main_hwnd = hwnd_;
     std::atomic<bool>* closing_ptr = &closing_;
-    std::thread([valid, rect, timeout, main_hwnd, closing_ptr]() {
+    join_open_thread();  // ensure previous thread is done
+    open_thread_ = std::thread([valid, rect, timeout, main_hwnd, closing_ptr]() {
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
         try {
-            fto::open_folders_as_tabs(valid,
-                [main_hwnd, closing_ptr](int current, int total, const std::wstring& path) {
-                    if (closing_ptr->load()) return;
-                    PostMessageW(main_hwnd, WM_TAB_OPEN_PROGRESS,
-                        MAKEWPARAM(current, total),
-                        (LPARAM)new std::wstring(path));
-                },
-                [main_hwnd, closing_ptr](const std::wstring& p, const std::wstring& e) {
-                    if (closing_ptr->load()) return;
-                    PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
-                        (WPARAM)new std::wstring(p),
-                        (LPARAM)new std::wstring(e));
-                },
-                timeout, rect);
+            if (!closing_ptr->load()) {
+                fto::open_folders_as_tabs(valid,
+                    [main_hwnd, closing_ptr](int current, int total, const std::wstring& path) {
+                        if (closing_ptr->load()) return;
+                        PostMessageW(main_hwnd, WM_TAB_OPEN_PROGRESS,
+                            MAKEWPARAM(current, total),
+                            (LPARAM)new std::wstring(path));
+                    },
+                    [main_hwnd, closing_ptr](const std::wstring& p, const std::wstring& e) {
+                        if (closing_ptr->load()) return;
+                        PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
+                            (WPARAM)new std::wstring(p),
+                            (LPARAM)new std::wstring(e));
+                    },
+                    timeout, rect);
+            }
         } catch (const std::exception& e) {
             if (!closing_ptr->load()) {
                 std::wstring err = utf8_to_wide(e.what());
@@ -495,10 +519,11 @@ void MainWindow::open_folders_as_tabs(
         if (!closing_ptr->load()) {
             PostMessageW(main_hwnd, WM_TAB_OPEN_COMPLETE, 0, 0);
         }
-    }).detach();
+    });
 }
 
 void MainWindow::on_tab_open_complete() {
+    join_open_thread();
     EnableWindow(hwnd_, TRUE);
     hide_toast();
     // Restore cursor
@@ -525,7 +550,7 @@ void MainWindow::show_toast(int total, const std::wstring& first_path) {
         NONCLIENTMETRICSW ncm = { sizeof(NONCLIENTMETRICSW) };
         SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0);
         HDC hdc = GetDC(hwnd_);
-        ncm.lfMessageFont.lfHeight = -MulDiv(13, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+        ncm.lfMessageFont.lfHeight = -MulDiv(layout::TOAST_FONT_PT, GetDeviceCaps(hdc, LOGPIXELSY), 72);
         ReleaseDC(hwnd_, hdc);
         toast_font_ = CreateFontIndirectW(&ncm.lfMessageFont);
     }
@@ -579,7 +604,7 @@ std::wstring MainWindow::build_toast_text(int current, int total, const std::wst
     std::wstring path_line;
     if (!path.empty()) {
         int toast_w = client_w_ / 2;
-        int available_w = toast_w - 40; // account for padding (16px each side + margin)
+        int available_w = std::max(toast_w - layout::TOAST_PAD, layout::TOAST_MIN_PATH_W);
         wchar_t compact[MAX_PATH];
         wcscpy_s(compact, path.c_str());
         HDC hdc = GetDC(toast_hwnd_ ? toast_hwnd_ : hwnd_);
@@ -598,6 +623,12 @@ void MainWindow::hide_toast() {
         DestroyWindow(toast_hwnd_);
         toast_hwnd_ = nullptr;
         LOG_DEBUG("toast", "Toast hidden");
+    }
+}
+
+void MainWindow::join_open_thread() {
+    if (open_thread_.joinable()) {
+        open_thread_.join();
     }
 }
 

@@ -3,6 +3,7 @@
 #include <vector>
 #include <optional>
 #include <unordered_map>
+#include <nlohmann/json.hpp>
 
 namespace fto {
 
@@ -25,10 +26,11 @@ struct TabGroup {
 };
 
 struct AppConfig {
+    int config_version = 1;
     std::vector<HistoryEntry> history;
     std::vector<TabGroup> tab_groups;
     std::string window_geometry = "800x600";
-    std::unordered_map<std::string, std::string> settings;
+    std::unordered_map<std::string, nlohmann::json> settings;
 
     AppConfig() = default;
 };

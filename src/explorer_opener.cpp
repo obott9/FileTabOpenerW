@@ -15,6 +15,18 @@ using Microsoft::WRL::ComPtr;
 
 namespace fto {
 
+// RAII wrapper for BSTR (COM string)
+class BstrGuard {
+    BSTR bstr_;
+public:
+    explicit BstrGuard(const wchar_t* s) : bstr_(SysAllocString(s)) {}
+    explicit BstrGuard(BSTR b) noexcept : bstr_(b) {}  // takes ownership
+    ~BstrGuard() { SysFreeString(bstr_); }  // SysFreeString(nullptr) is safe
+    BstrGuard(const BstrGuard&) = delete;
+    BstrGuard& operator=(const BstrGuard&) = delete;
+    operator BSTR() const { return bstr_; }
+};
+
 // --- Win32 constants ---
 static constexpr WORD VK_CONTROL_KEY = VK_CONTROL;
 static constexpr WORD VK_T_KEY = 0x54;
@@ -162,13 +174,13 @@ static bool open_tabs_uia(
     // Find AddButton
     ComPtr<IUIAutomationElement> add_btn;
     {
+        BstrGuard bstr(L"AddButton");
         VARIANT prop;
         VariantInit(&prop);
         prop.vt = VT_BSTR;
-        prop.bstrVal = SysAllocString(L"AddButton");
+        prop.bstrVal = bstr;
         ComPtr<IUIAutomationCondition> cond;
         uia->CreatePropertyCondition(UIA_AutomationIdPropertyId, prop, &cond);
-        SysFreeString(prop.bstrVal);
         if (cond) win_elem->FindFirst(TreeScope_Descendants, cond.Get(), &add_btn);
     }
     if (add_btn) LOG_DEBUG("explorer", "Found AddButton via UIA");
@@ -213,25 +225,25 @@ static bool open_tabs_uia(
             // Find address bar Edit
             ComPtr<IUIAutomationElement> auto_suggest;
             {
+                BstrGuard bstr(L"PART_AutoSuggestBox");
                 VARIANT prop;
                 VariantInit(&prop);
                 prop.vt = VT_BSTR;
-                prop.bstrVal = SysAllocString(L"PART_AutoSuggestBox");
+                prop.bstrVal = bstr;
                 ComPtr<IUIAutomationCondition> cond;
                 uia->CreatePropertyCondition(UIA_AutomationIdPropertyId, prop, &cond);
-                SysFreeString(prop.bstrVal);
                 if (cond) win_elem->FindFirst(TreeScope_Descendants, cond.Get(), &auto_suggest);
             }
 
             ComPtr<IUIAutomationElement> addr_edit;
             if (auto_suggest) {
+                BstrGuard bstr(L"TextBox");
                 VARIANT prop;
                 VariantInit(&prop);
                 prop.vt = VT_BSTR;
-                prop.bstrVal = SysAllocString(L"TextBox");
+                prop.bstrVal = bstr;
                 ComPtr<IUIAutomationCondition> cond;
                 uia->CreatePropertyCondition(UIA_AutomationIdPropertyId, prop, &cond);
-                SysFreeString(prop.bstrVal);
                 if (cond) auto_suggest->FindFirst(TreeScope_Descendants, cond.Get(), &addr_edit);
             }
 
@@ -244,12 +256,11 @@ static bool open_tabs_uia(
                 ComPtr<IUIAutomationValuePattern> value_pat;
                 if (SUCCEEDED(addr_edit->GetCurrentPatternAs(UIA_ValuePatternId,
                               IID_PPV_ARGS(&value_pat))) && value_pat) {
-                    BSTR bstr_path = SysAllocString(norm_path.c_str());
+                    BstrGuard bstr_path(norm_path.c_str());
                     if (SUCCEEDED(value_pat->SetValue(bstr_path))) {
                         LOG_DEBUG("explorer", "Path set via UIA ValuePattern (attempt %d)", attempt + 1);
                         path_set = true;
                     }
-                    SysFreeString(bstr_path);
                 }
             }
 
@@ -283,13 +294,10 @@ static bool open_tabs_uia(
             ComPtr<IUIAutomationElement> focused;
             uia->GetFocusedElement(&focused);
             if (focused) {
-                BSTR auto_id = nullptr;
-                focused->get_CurrentAutomationId(&auto_id);
-                bool is_addr = false;
-                if (auto_id) {
-                    is_addr = (wcscmp(auto_id, L"TextBox") == 0);
-                    SysFreeString(auto_id);
-                }
+                BSTR auto_id_raw = nullptr;
+                focused->get_CurrentAutomationId(&auto_id_raw);
+                BstrGuard auto_id(auto_id_raw);  // takes ownership
+                bool is_addr = auto_id_raw && (wcscmp(auto_id_raw, L"TextBox") == 0);
                 if (!is_addr) {
                     LOG_DEBUG("explorer", "Navigation complete");
                     Sleep(300);
