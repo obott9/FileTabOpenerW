@@ -87,6 +87,11 @@ FileTabOpenerW/
     nlohmann/json.hpp     # JSON library (header-only)
 ```
 
+## Related Projects
+
+- **[file_tab_opener](https://github.com/obott9/file_tab_opener)** — Cross-platform version (Python/Tk). macOS & Windows support.
+- **[FileTabOpenerM](https://github.com/obott9/FileTabOpenerM)** — macOS native version (Swift/SwiftUI). AX API + AppleScript hybrid for reliable Finder tab control.
+
 ## License
 
 [MIT License](LICENSE)
