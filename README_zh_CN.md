@@ -10,12 +10,26 @@
 
 - **标签组管理** - 创建、重命名、复制、删除及排序标签组
 - **一键打开** - 将标签组中的所有文件夹在一个资源管理器窗口中以标签页方式打开
+- **双布局** - 紧凑布局（标签按钮栏）与侧边栏布局（ListView + 详细面板）切换
 - **文件夹历史** - 最近打开的文件夹记录（支持固定）
 - **窗口位置** - 按标签组保存及恢复资源管理器的位置和大小
 - **多显示器** - 支持多显示器环境的负坐标
 - **深色模式** - 自动跟随 Windows 深色/浅色主题
+- **单实例** - 同时只运行一个实例。第二次启动会将现有窗口带到前台
 - **多语言支持** - 英语、日语、韩语、繁体/简体中文
 - **便携式配置** - JSON 配置文件位于 `%APPDATA%\FileTabOpenerW`
+
+## 截图
+
+| 紧凑布局 | 侧边栏布局 |
+|:-:|:-:|
+| ![Compact](docs/images/zh_CN_compact.png) | ![Sidebar](docs/images/zh_CN_sidebar.png) |
+
+## 下载
+
+从 [GitHub Releases](https://github.com/obott9/FileTabOpenerW/releases) 下载最新的 `.exe`。
+
+> **注意：** 此应用未经代码签名。首次启动时，Windows SmartScreen 可能会显示警告。请点击"更多信息"→"仍要运行"。
 
 ## 系统要求
 
@@ -72,8 +86,10 @@ FileTabOpenerW/
     config.h/cpp          # JSON 配置 (nlohmann/json)
     main_window.h/cpp     # 主窗口（含设置栏）
     history_section.h/cpp # 文件夹历史（含下拉菜单）
-    tab_group_section.h/cpp # 标签组管理 UI
+    tab_group_section.h/cpp # 标签组管理 UI（紧凑布局）
+    modern_tab_group_section.h/cpp # 侧边栏布局（ListView + 详细面板）
     tab_view.h/cpp        # 自定义标签按钮栏（支持滚动）
+    theme.h               # 颜色主题常量
     input_dialog.h/cpp    # 模态输入对话框
     explorer_opener.h/cpp # 资源管理器标签页自动化 (UIA/SendInput)
     i18n.h/cpp            # 多语言支持
@@ -86,6 +102,15 @@ FileTabOpenerW/
   include/
     nlohmann/json.hpp     # JSON 库（仅头文件）
 ```
+
+## 作者
+
+[obott9](https://github.com/obott9)
+
+## 相关项目
+
+- **[file_tab_opener](https://github.com/obott9/file_tab_opener)** — 跨平台版（Python/Tk）。支持 macOS 和 Windows。
+- **[FileTabOpenerM](https://github.com/obott9/FileTabOpenerM)** — macOS 原生版（Swift/SwiftUI）。AX API + AppleScript 混合方式控制 Finder 标签页。
 
 ## 许可证
 

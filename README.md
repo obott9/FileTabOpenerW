@@ -10,12 +10,26 @@ This is the Windows-native port of [file_tab_opener](https://github.com/obott9/f
 
 - **Tab Group Management** - Create, rename, copy, delete, and reorder tab groups
 - **One-Click Open** - Open all folders in a tab group as Explorer tabs in a single window
+- **Dual Layout** - Compact layout (tab button bar) and Sidebar layout (ListView + detail panel) with toggle switch
 - **Folder History** - Recently opened folders with pin support
 - **Window Geometry** - Save and restore Explorer window position/size per tab group
 - **Multi-Monitor** - Supports negative coordinates for multi-monitor setups
 - **Dark Mode** - Follows Windows dark/light theme automatically
+- **Single Instance** - Only one instance runs at a time; second launch brings existing window to foreground
 - **Internationalization** - English, Japanese, Korean, Traditional/Simplified Chinese
 - **Portable Config** - JSON configuration file in `%APPDATA%\FileTabOpenerW`
+
+## Screenshots
+
+| Compact Layout | Sidebar Layout |
+|:-:|:-:|
+| ![Compact](docs/images/en_compact.png) | ![Sidebar](docs/images/en_sidebar.png) |
+
+## Download
+
+Download the latest `.exe` from [GitHub Releases](https://github.com/obott9/FileTabOpenerW/releases).
+
+> **Note:** This app is not code-signed. On first launch, Windows SmartScreen may show a warning. Click "More info" then "Run anyway" to proceed.
 
 ## Requirements
 
@@ -72,8 +86,10 @@ FileTabOpenerW/
     config.h/cpp          # JSON configuration (nlohmann/json)
     main_window.h/cpp     # Main window with settings bar
     history_section.h/cpp # Folder history with dropdown
-    tab_group_section.h/cpp # Tab group management UI
+    tab_group_section.h/cpp # Tab group management UI (Compact layout)
+    modern_tab_group_section.h/cpp # Sidebar layout (ListView + detail panel)
     tab_view.h/cpp        # Custom tab button bar with scrolling
+    theme.h               # Color theme constants
     input_dialog.h/cpp    # Modal input dialog
     explorer_opener.h/cpp # Explorer tab automation (UIA/SendInput)
     i18n.h/cpp            # Internationalization
@@ -86,6 +102,10 @@ FileTabOpenerW/
   include/
     nlohmann/json.hpp     # JSON library (header-only)
 ```
+
+## Author
+
+[obott9](https://github.com/obott9)
 
 ## Related Projects
 

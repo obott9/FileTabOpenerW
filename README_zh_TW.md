@@ -10,12 +10,26 @@
 
 - **分頁群組管理** - 建立、重新命名、複製、刪除及排序分頁群組
 - **一鍵開啟** - 將分頁群組中的所有資料夾在一個檔案總管視窗中以分頁方式開啟
+- **雙佈局** - 精簡佈局（分頁按鈕列）與側邊欄佈局（ListView + 詳細面板）切換
 - **資料夾歷史** - 最近開啟的資料夾記錄（支援釘選）
 - **視窗位置** - 按分頁群組儲存及還原檔案總管的位置和大小
 - **多螢幕** - 支援多螢幕環境的負座標
 - **深色模式** - 自動跟隨 Windows 深色/淺色主題
+- **單一執行個體** - 同時僅執行一個實例。第二次啟動會將現有視窗帶到前景
 - **多語言支援** - 英語、日語、韓語、繁體/簡體中文
 - **可攜式設定** - JSON 設定檔位於 `%APPDATA%\FileTabOpenerW`
+
+## 螢幕截圖
+
+| 精簡佈局 | 側邊欄佈局 |
+|:-:|:-:|
+| ![Compact](docs/images/zh_TW_compact.png) | ![Sidebar](docs/images/zh_TW_sidebar.png) |
+
+## 下載
+
+從 [GitHub Releases](https://github.com/obott9/FileTabOpenerW/releases) 下載最新的 `.exe`。
+
+> **注意：** 此應用程式未經程式碼簽章。首次啟動時，Windows SmartScreen 可能會顯示警告。請點擊「更多資訊」→「仍要執行」。
 
 ## 系統需求
 
@@ -72,8 +86,10 @@ FileTabOpenerW/
     config.h/cpp          # JSON 設定 (nlohmann/json)
     main_window.h/cpp     # 主視窗（含設定列）
     history_section.h/cpp # 資料夾歷史（含下拉選單）
-    tab_group_section.h/cpp # 分頁群組管理 UI
+    tab_group_section.h/cpp # 分頁群組管理 UI（精簡佈局）
+    modern_tab_group_section.h/cpp # 側邊欄佈局（ListView + 詳細面板）
     tab_view.h/cpp        # 自訂分頁按鈕列（支援捲動）
+    theme.h               # 色彩主題常數
     input_dialog.h/cpp    # 模態輸入對話方塊
     explorer_opener.h/cpp # 檔案總管分頁自動化 (UIA/SendInput)
     i18n.h/cpp            # 多語言支援
@@ -86,6 +102,15 @@ FileTabOpenerW/
   include/
     nlohmann/json.hpp     # JSON 函式庫（僅標頭檔）
 ```
+
+## 作者
+
+[obott9](https://github.com/obott9)
+
+## 相關專案
+
+- **[file_tab_opener](https://github.com/obott9/file_tab_opener)** — 跨平台版（Python/Tk）。支援 macOS 與 Windows。
+- **[FileTabOpenerM](https://github.com/obott9/FileTabOpenerM)** — macOS 原生版（Swift/SwiftUI）。AX API + AppleScript 混合方式控制 Finder 分頁。
 
 ## 授權
 
