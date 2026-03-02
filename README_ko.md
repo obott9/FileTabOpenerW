@@ -126,6 +126,8 @@ Claude는 다음을 지원했습니다:
 
 [![GitHub Stars](https://img.shields.io/github/stars/obott9/FileTabOpenerW?style=social)](https://github.com/obott9/FileTabOpenerW)
 
+커피 한 잔 사주시거나 스폰서가 되어 주시면 큰 힘이 됩니다!
+
 [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-♥-ea4aaa)](https://github.com/sponsors/obott9)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-☕-orange)](https://buymeacoffee.com/obott9)
 
