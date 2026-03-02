@@ -8,9 +8,9 @@ This is the Windows-native port of [file_tab_opener](https://github.com/obott9/f
 
 ## Features
 
-- **Tab Group Management** - Create, rename, copy, delete, and reorder tab groups
+- **Tab Group Management** - Create, rename, copy, delete, and reorder tab groups. Copy names follow `"{base} {N}"` pattern: "Work" → "Work 1" → "Work 2"
 - **One-Click Open** - Open all folders in a tab group as Explorer tabs in a single window
-- **Dual Layout** - Compact layout (tab button bar) and Sidebar layout (ListView + detail panel) with toggle switch
+- **Dual Layout** - Compact layout (default, tab button bar) and Sidebar layout (ListView + detail panel); Sidebar layout ported from the macOS SwiftUI version
 - **Folder History** - Recently opened folders with pin support
 - **Window Geometry** - Save and restore Explorer window position/size per tab group
 - **Multi-Monitor** - Supports negative coordinates for multi-monitor setups
@@ -69,9 +69,27 @@ The executable will be at `build/Release/FileTabOpenerW.exe`.
 
 The application uses a multi-strategy approach to open Explorer tabs:
 
-1. **UI Automation (UIA)** - Primary method. Uses the Windows UI Automation API to find the Explorer's "New Tab" button and address bar, then programmatically creates tabs and navigates to each path.
-2. **SendInput** - Fallback. Simulates Ctrl+T (new tab), Ctrl+L (address bar focus), types the path, and presses Enter.
+1. **UI Automation (UIA)** - Primary method. Uses the Windows UI Automation API to find the Explorer's "New Tab" button and address bar, then programmatically creates tabs and navigates to each path. Uses PostMessage for Enter key (window-targeted, not global).
+2. **SendInput** - Fallback. Uses OS-level keystroke simulation (Ctrl+T, Ctrl+L, path typing, Enter). Less reliable due to focus and timing issues.
 3. **Separate Windows** - Last resort. Opens each folder in its own Explorer window.
+
+### Network Paths
+
+UNC paths (`\\server\share`) are supported. Since network shares may require authentication that only Explorer can trigger, UNC paths skip the usual directory existence validation and are passed directly to Explorer.
+
+When a UNC path requires authentication:
+1. Explorer shows a Windows Security credential dialog
+2. The app continues opening remaining tabs without waiting for authentication
+3. The tab initially shows "This PC" as a placeholder
+4. After the user authenticates, Explorer navigates to the actual network share
+
+If the user cancels the authentication dialog, the tab remains on "This PC".
+
+### Performance Note
+
+Windows Explorer does not provide a public API for tab operations. All methods rely on UI Automation or keystroke simulation, which requires delays between each tab for the UI to respond. Opening many tabs will be noticeably slower than expected.
+
+> **Important (SendInput fallback):** Do not use the keyboard or mouse while tabs are being opened. The SendInput method uses OS-level keystroke simulation, so any input during the operation may interfere with the automation. The UIA method primarily uses targeted UI Automation and PostMessage (no global keystrokes), but may fall back to keyboard input when a UIA operation fails.
 
 ## Configuration
 
