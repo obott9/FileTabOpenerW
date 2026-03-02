@@ -112,6 +112,21 @@ FileTabOpenerW/
 - **[file_tab_opener](https://github.com/obott9/file_tab_opener)** — 크로스 플랫폼 버전 (Python/Tk). macOS & Windows 지원.
 - **[FileTabOpenerM](https://github.com/obott9/FileTabOpenerM)** — macOS 네이티브 버전 (Swift/SwiftUI). AX API + AppleScript 하이브리드로 Finder 탭 제어.
 
+## 개발
+
+이 프로젝트는 Anthropic의 **Claude AI**와의 공동 작업으로 개발되었습니다.
+Claude는 다음을 지원했습니다:
+* 아키텍처 설계 및 코드 구현
+* 다국어 로컬라이제이션
+* 문서 및 README 작성
+
+## 서포트
+
+이 앱이 유용했다면 커피 한 잔 사주세요!
+
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-♥-ea4aaa)](https://github.com/sponsors/obott9)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-☕-orange)](https://buymeacoffee.com/obott9)
+
 ## 라이선스
 
 [MIT License](LICENSE)
