@@ -290,6 +290,17 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     ? (self->dark_mode_ ? theme::BTN_TEXT_DARK : theme::BTN_TEXT_LIGHT)
                     : (self->dark_mode_ ? theme::TAB_UNSEL_TEXT_DARK : theme::TAB_UNSEL_TEXT_LIGHT);
                 draw_themed_button(dis, bg, pressed, text_color, parent_bg);
+                // Accent underline on the active layout button
+                if (is_checked) {
+                    COLORREF accent = self->dark_mode_ ? theme::LAYOUT_ACCENT_DARK : theme::LAYOUT_ACCENT_LIGHT;
+                    HBRUSH accent_brush = CreateSolidBrush(accent);
+                    RECT line_rc = dis->rcItem;
+                    line_rc.top = line_rc.bottom - theme::LAYOUT_ACCENT_HEIGHT;
+                    line_rc.left += theme::CORNER_RADIUS / 2;
+                    line_rc.right -= theme::CORNER_RADIUS / 2;
+                    FillRect(dis->hDC, &line_rc, accent_brush);
+                    DeleteObject(accent_brush);
+                }
             } else {
                 bg = self->dark_mode_ ? theme::BTN_BG_DARK : theme::BTN_BG_LIGHT;
                 pressed = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;

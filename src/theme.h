@@ -26,6 +26,11 @@ constexpr COLORREF TAB_UNSEL_BG_DARK       = RGB(0x47, 0x47, 0x47);
 constexpr COLORREF TAB_UNSEL_PRESSED_DARK  = RGB(0x3A, 0x3A, 0x3A);
 constexpr COLORREF TAB_UNSEL_TEXT_DARK     = RGB(0xCC, 0xCC, 0xCC);
 
+// Layout toggle accent underline
+constexpr COLORREF LAYOUT_ACCENT_LIGHT = RGB(0x00, 0x78, 0xD4);  // Windows accent blue
+constexpr COLORREF LAYOUT_ACCENT_DARK  = RGB(0x4C, 0xC2, 0xFF);  // Light blue for dark mode
+constexpr int LAYOUT_ACCENT_HEIGHT = 3;
+
 // Parent background (for rounded corner fill)
 constexpr COLORREF PARENT_BG_DARK = RGB(0x2B, 0x2B, 0x2B);
 
