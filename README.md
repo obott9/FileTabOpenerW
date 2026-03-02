@@ -17,6 +17,7 @@ This is the Windows-native port of [file_tab_opener](https://github.com/obott9/f
 - **Dark Mode** - Follows Windows dark/light theme automatically
 - **Single Instance** - Only one instance runs at a time; second launch brings existing window to foreground
 - **Internationalization** - English, Japanese, Korean, Traditional/Simplified Chinese
+- **Network Path Support** - UNC paths (`\\server\share`) can be registered even when offline; Explorer handles authentication on open
 - **Portable Config** - JSON configuration file in `%APPDATA%\FileTabOpenerW`
 
 ## Screenshots
