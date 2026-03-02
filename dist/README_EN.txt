@@ -27,6 +27,7 @@ Group folders by project and open them all as Explorer tabs with one click.
 - Folder history with pin support
 - Window position/size save and restore
 - Automatic dark mode support
+- Network path support (UNC paths can be registered even when offline)
 - 5 languages (English, Japanese, Korean, Traditional/Simplified Chinese)
 
 [Configuration]
