@@ -142,7 +142,7 @@ void ConfigManager::save() {
         }
     }
     std::error_code ec;
-    std::filesystem::rename(wide_to_utf8(tmp_path), wide_to_utf8(path_), ec);
+    std::filesystem::rename(std::filesystem::path(tmp_path), std::filesystem::path(path_), ec);
     if (ec) {
         // Fallback: direct write
         LOG_WARN("config", "Rename failed (%s), falling back to direct write", ec.message().c_str());

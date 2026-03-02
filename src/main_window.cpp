@@ -495,24 +495,33 @@ void MainWindow::open_folders_as_tabs(
                 fto::open_folders_as_tabs(valid,
                     [main_hwnd, closing_ptr](int current, int total, const std::wstring& path) {
                         if (closing_ptr->load()) return;
-                        PostMessageW(main_hwnd, WM_TAB_OPEN_PROGRESS,
-                            MAKEWPARAM(current, total),
-                            (LPARAM)new std::wstring(path));
+                        auto* ps = new std::wstring(path);
+                        if (!PostMessageW(main_hwnd, WM_TAB_OPEN_PROGRESS,
+                                MAKEWPARAM(current, total), (LPARAM)ps)) {
+                            delete ps;
+                        }
                     },
                     [main_hwnd, closing_ptr](const std::wstring& p, const std::wstring& e) {
                         if (closing_ptr->load()) return;
-                        PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
-                            (WPARAM)new std::wstring(p),
-                            (LPARAM)new std::wstring(e));
+                        auto* pp = new std::wstring(p);
+                        auto* pe = new std::wstring(e);
+                        if (!PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
+                                (WPARAM)pp, (LPARAM)pe)) {
+                            delete pp;
+                            delete pe;
+                        }
                     },
                     timeout, rect);
             }
         } catch (const std::exception& e) {
             if (!closing_ptr->load()) {
-                std::wstring err = utf8_to_wide(e.what());
-                PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
-                    (WPARAM)new std::wstring(L""),
-                    (LPARAM)new std::wstring(err));
+                auto* pp = new std::wstring(L"");
+                auto* pe = new std::wstring(utf8_to_wide(e.what()));
+                if (!PostMessageW(main_hwnd, WM_TAB_OPEN_ERROR,
+                        (WPARAM)pp, (LPARAM)pe)) {
+                    delete pp;
+                    delete pe;
+                }
             }
         }
         CoUninitialize();

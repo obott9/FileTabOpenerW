@@ -85,21 +85,54 @@ static std::vector<HWND> enum_explorer_hwnds() {
     return hwnds;
 }
 
-static HWND find_new_explorer_hwnd(const std::set<HWND>& before, float timeout_sec) {
+static bool is_explorer_hwnd(HWND hwnd) {
+    wchar_t cls[256];
+    GetClassNameW(hwnd, cls, 256);
+    return wcscmp(cls, L"CabinetWClass") == 0;
+}
+
+// After ShellExecuteW, detect the target Explorer window.
+// On Windows 11, ShellExecuteW(L"explore") may add a tab to an existing
+// window instead of creating a new one. This function handles both cases:
+//   1. New window created -> returns the new HWND (detected within 5s)
+//   2. Tab added to existing window -> returns the reused HWND (foreground)
+static HWND find_explorer_hwnd_after_launch(const std::set<HWND>& before_hwnds) {
+    constexpr float SHORT_TIMEOUT = 5.0f;
+
     auto start = std::chrono::steady_clock::now();
     while (true) {
-        auto elapsed = std::chrono::duration<float>(
+        float elapsed = std::chrono::duration<float>(
             std::chrono::steady_clock::now() - start).count();
-        if (elapsed >= timeout_sec) break;
+        if (elapsed >= SHORT_TIMEOUT) break;
         for (HWND hwnd : enum_explorer_hwnds()) {
-            if (before.find(hwnd) == before.end()) {
+            if (before_hwnds.find(hwnd) == before_hwnds.end()) {
                 LOG_DEBUG("explorer", "New Explorer window: hwnd=%p (%.1fs)", hwnd, elapsed);
                 return hwnd;
             }
         }
         Sleep(200);
     }
-    LOG_WARN("explorer", "New Explorer window not found (timeout=%.1fs)", timeout_sec);
+
+    // No new window — Windows 11 likely added a tab to an existing window
+    LOG_INFO("explorer", "No new window in %.0fs; detecting reused Explorer (tab reuse)",
+             SHORT_TIMEOUT);
+
+    // ShellExecuteW brings the reused window to the foreground
+    HWND fg = GetForegroundWindow();
+    if (fg && is_explorer_hwnd(fg)) {
+        LOG_INFO("explorer", "Reused foreground Explorer: hwnd=%p", fg);
+        return fg;
+    }
+
+    // Last resort: find any visible Explorer window
+    for (HWND hwnd : enum_explorer_hwnds()) {
+        if (IsWindowVisible(hwnd)) {
+            LOG_INFO("explorer", "Reused visible Explorer: hwnd=%p", hwnd);
+            return hwnd;
+        }
+    }
+
+    LOG_WARN("explorer", "No Explorer window found after launch");
     return nullptr;
 }
 
@@ -117,12 +150,6 @@ static void post_enter_key(HWND hwnd) {
     PostMessageW(hwnd, WM_KEYDOWN, VK_RETURN_KEY, 0);
     Sleep(50);
     PostMessageW(hwnd, WM_KEYUP, VK_RETURN_KEY, 0);
-}
-
-static bool is_explorer_hwnd(HWND hwnd) {
-    wchar_t cls[256];
-    GetClassNameW(hwnd, cls, 256);
-    return wcscmp(cls, L"CabinetWClass") == 0;
 }
 
 // --- UIA method ---
@@ -153,7 +180,7 @@ static bool open_tabs_uia(
     std::wstring first_path = normalize_path(paths[0]);
     ShellExecuteW(nullptr, L"explore", first_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 
-    HWND new_hwnd = find_new_explorer_hwnd(before_set, timeout);
+    HWND new_hwnd = find_explorer_hwnd_after_launch(before_set);
     if (!new_hwnd) return false;
     if (paths.size() == 1) {
         if (rect) apply_window_rect(new_hwnd, *rect);
@@ -319,7 +346,7 @@ static bool open_tabs_sendinput(
     const std::vector<std::wstring>& paths,
     const ProgressCallback& on_progress,
     const ErrorCallback& /*on_error*/,
-    float timeout,
+    float /*timeout*/,
     const std::optional<WindowRect>& rect)
 {
     LOG_INFO("explorer", "Using SendInput method");
@@ -332,7 +359,7 @@ static bool open_tabs_sendinput(
                   nullptr, nullptr, SW_SHOWNORMAL);
     Sleep(1500);
 
-    HWND new_hwnd = find_new_explorer_hwnd(before_set, timeout);
+    HWND new_hwnd = find_explorer_hwnd_after_launch(before_set);
     if (!new_hwnd) return false;
 
     if (paths.size() == 1) {
@@ -368,7 +395,7 @@ static bool open_tabs_separate(
     const std::vector<std::wstring>& paths,
     const ProgressCallback& on_progress,
     const ErrorCallback& /*on_error*/,
-    float timeout,
+    float /*timeout*/,
     const std::optional<WindowRect>& rect)
 {
     LOG_INFO("explorer", "Opening as separate windows (fallback)");
@@ -379,7 +406,7 @@ static bool open_tabs_separate(
         std::set<HWND> before(before_vec.begin(), before_vec.end());
         ShellExecuteW(nullptr, L"explore", norm.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
         if (rect) {
-            HWND hwnd = find_new_explorer_hwnd(before, timeout);
+            HWND hwnd = find_explorer_hwnd_after_launch(before);
             if (hwnd) apply_window_rect(hwnd, *rect);
         }
         Sleep(300);
@@ -390,13 +417,13 @@ static bool open_tabs_separate(
 // --- Public API ---
 
 bool open_single_folder(const std::wstring& path,
-                        const std::optional<WindowRect>& rect, float timeout) {
+                        const std::optional<WindowRect>& rect, float /*timeout*/) {
     std::wstring norm = normalize_path(path);
     auto before_vec = enum_explorer_hwnds();
     std::set<HWND> before(before_vec.begin(), before_vec.end());
     ShellExecuteW(nullptr, L"explore", norm.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     if (rect) {
-        HWND hwnd = find_new_explorer_hwnd(before, timeout);
+        HWND hwnd = find_explorer_hwnd_after_launch(before);
         if (hwnd) apply_window_rect(hwnd, *rect);
     }
     return true;

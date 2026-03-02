@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "logger.h"
 #include <windows.h>
 #include <shlwapi.h>
 #include <shlobj.h>
@@ -47,8 +48,13 @@ std::wstring normalize_path(const std::wstring& path) {
         return canonical.wstring();
     } catch (...) {
         // Fallback for paths that can't be canonicalized (e.g., UNC)
+        // Note: PathCanonicalizeW is limited to MAX_PATH (260 chars)
         wchar_t buf[MAX_PATH];
         if (PathCanonicalizeW(buf, path.c_str())) {
+            if (path.size() >= MAX_PATH) {
+                LOG_WARN("utils", "Path may be truncated by PathCanonicalizeW (%d chars)",
+                         (int)path.size());
+            }
             return buf;
         }
         return path;
@@ -91,9 +97,11 @@ validate_paths(const std::vector<std::wstring>& paths) {
 }
 
 std::wstring get_appdata_dir() {
-    wchar_t buf[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, buf))) {
-        return std::wstring(buf) + L"\\FileTabOpenerW";
+    PWSTR appdata = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdata))) {
+        std::wstring result = std::wstring(appdata) + L"\\FileTabOpenerW";
+        CoTaskMemFree(appdata);
+        return result;
     }
     return L".\\FileTabOpenerW";
 }

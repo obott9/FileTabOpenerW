@@ -11,6 +11,7 @@ struct InputDialogData {
     const std::wstring* initial;
     std::wstring result;
     bool ok = false;
+    HFONT font = nullptr;
 };
 
 static LRESULT CALLBACK InputDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -22,7 +23,8 @@ static LRESULT CALLBACK InputDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         data = reinterpret_cast<InputDialogData*>(cs->lpCreateParams);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data));
 
-        HFONT hFont = create_system_message_font();
+        data->font = create_system_message_font();
+        HFONT hFont = data->font;
 
         // Prompt label
         HWND label = CreateWindowW(L"STATIC", data->prompt->c_str(),
@@ -75,8 +77,10 @@ static LRESULT CALLBACK InputDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         }
         break;
     case WM_DESTROY: {
-        HFONT hFont = (HFONT)SendMessageW(GetDlgItem(hwnd, IDC_INPUT_EDIT), WM_GETFONT, 0, 0);
-        if (hFont) DeleteObject(hFont);
+        if (data && data->font) {
+            DeleteObject(data->font);
+            data->font = nullptr;
+        }
         PostQuitMessage(0);
         return 0;
     }
