@@ -186,6 +186,16 @@ void TabGroupSection::create(HWND parent, int x, int y, int w, int h) {
         (HMENU)(INT_PTR)IDC_OPEN_AS_TABS_BTN, nullptr, nullptr);
     SendMessageW(open_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
 
+    // Collect all controls for show/hide
+    all_controls_ = {
+        add_btn_, del_btn_, rename_btn_, copy_btn_, left_btn_, right_btn_,
+        geom_x_label_, geom_x_entry_, geom_y_label_, geom_y_entry_,
+        geom_w_label_, geom_w_entry_, geom_h_label_, geom_h_entry_, geom_get_btn_,
+        listbox_, move_up_btn_, move_down_btn_, add_path_btn_, remove_btn_, browse_btn_,
+        path_entry_, open_btn_
+    };
+    // TabView hwnd is managed separately
+
     load_tabs_from_config();
 }
 
@@ -613,6 +623,23 @@ void TabGroupSection::refresh_texts() {
     SendMessageW(path_entry_, EM_SETCUEBANNER, FALSE,
         (LPARAM)t("path.placeholder").c_str());
     SetWindowTextW(open_btn_, t("tab.open_as_tabs").c_str());
+}
+
+void TabGroupSection::show(bool visible) {
+    int cmd = visible ? SW_SHOW : SW_HIDE;
+    for (HWND h : all_controls_) {
+        if (h) ShowWindow(h, cmd);
+    }
+    // TabView has its own hwnd
+    if (IsWindow(tab_view_.hwnd())) {
+        ShowWindow(tab_view_.hwnd(), cmd);
+    }
+}
+
+void TabGroupSection::select_tab(const std::wstring& name) {
+    if (name.empty()) return;
+    tab_view_.set_current_tab(name);
+    on_tab_changed(name);
 }
 
 } // namespace fto

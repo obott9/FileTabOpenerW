@@ -36,6 +36,7 @@ namespace layout {
     constexpr int TOAST_PAD      = 40;   // Toast internal padding
     constexpr int TOAST_MIN_PATH_W = 60; // Min width for compact path
     constexpr int TOAST_FONT_PT  = 13;   // Toast font size (pt)
+    constexpr int TOGGLE_BTN_W   = 70;   // Layout toggle button width
 }
 
 static const wchar_t* MAIN_WINDOW_CLASS = L"FileTabOpenerMainWindow";
@@ -164,12 +165,20 @@ void MainWindow::create() {
 void MainWindow::run() {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
-        // Handle Enter key in path entry
+        // Handle Enter key in path entry (Compact and Sidebar)
         if (msg.message == WM_KEYDOWN && msg.wParam == VK_RETURN) {
             HWND focus = GetFocus();
             LONG id = GetWindowLongW(focus, GWL_ID);
-            if (id == IDC_PATH_ENTRY && tab_group_) {
-                tab_group_->handle_command(MAKEWPARAM(IDC_PATH_ADD_BTN, BN_CLICKED), 0);
+            if (id == IDC_PATH_ENTRY && classic_tab_group_ && !use_modern_) {
+                classic_tab_group_->handle_command(MAKEWPARAM(IDC_PATH_ADD_BTN, BN_CLICKED), 0);
+                continue;
+            }
+            if (id == IDC_MODERN_PATH_ENTRY && modern_tab_group_ && use_modern_) {
+                modern_tab_group_->handle_command(MAKEWPARAM(IDC_MODERN_ADD_BTN, BN_CLICKED), 0);
+                continue;
+            }
+            if (id == IDC_MODERN_NEW_GROUP_ENTRY && modern_tab_group_ && use_modern_) {
+                modern_tab_group_->handle_command(MAKEWPARAM(IDC_MODERN_NEW_GROUP_BTN, BN_CLICKED), 0);
                 continue;
             }
         }
@@ -208,6 +217,37 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     case WM_COMMAND:
         self->on_command(wParam, lParam);
         return 0;
+    case WM_NOTIFY:
+        if (self->modern_tab_group_ && self->use_modern_) {
+            if (self->modern_tab_group_->handle_notify(wParam, lParam))
+                return 0;
+        }
+        break;
+    case WM_CONTEXTMENU: {
+        // Forward right-click on modern path list
+        if (self->use_modern_ && self->modern_tab_group_) {
+            HWND target = (HWND)wParam;
+            LONG id = GetWindowLongW(target, GWL_ID);
+            if (id == IDC_MODERN_PATH_LIST) {
+                int sel = (int)SendMessageW(target, LB_GETCURSEL, 0, 0);
+                if (sel >= 0) {
+                    POINT pt;
+                    GetCursorPos(&pt);
+                    HMENU menu = CreatePopupMenu();
+                    AppendMenuW(menu, MF_STRING, IDM_MODERN_PATH_REMOVE,
+                        t("path.remove").c_str());
+                    AppendMenuW(menu, MF_STRING, IDM_MODERN_PATH_OPEN_EXPLORER,
+                        t("path.open_explorer").c_str());
+                    AppendMenuW(menu, MF_STRING, IDM_MODERN_PATH_COPY_PATH,
+                        t("path.copy_path").c_str());
+                    TrackPopupMenu(menu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, nullptr);
+                    DestroyMenu(menu);
+                }
+                return 0;
+            }
+        }
+        break;
+    }
     case WM_TAB_OPEN_COMPLETE:
         self->on_tab_open_complete();
         return 0;
@@ -233,11 +273,29 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     case WM_DRAWITEM: {
         auto* dis = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
         if (dis->CtlType == ODT_BUTTON) {
-            COLORREF bg = self->dark_mode_ ? theme::BTN_BG_DARK : theme::BTN_BG_LIGHT;
-            COLORREF pressed = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
-            COLORREF text = self->dark_mode_ ? theme::BTN_TEXT_DARK : theme::BTN_TEXT_LIGHT;
+            COLORREF bg, pressed, text_color;
             COLORREF parent_bg = self->dark_mode_ ? theme::PARENT_BG_DARK : GetSysColor(COLOR_3DFACE);
-            draw_themed_button(dis, bg, pressed, text, parent_bg);
+
+            // Layout toggle buttons: selected state = pressed appearance
+            if (dis->CtlID == IDC_LAYOUT_CLASSIC_BTN || dis->CtlID == IDC_LAYOUT_MODERN_BTN) {
+                bool is_checked = (SendMessageW(dis->hwndItem, BM_GETCHECK, 0, 0) == BST_CHECKED);
+                if (is_checked) {
+                    bg = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
+                    pressed = bg;
+                } else {
+                    bg = self->dark_mode_ ? theme::TAB_UNSEL_BG_DARK : theme::TAB_UNSEL_BG_LIGHT;
+                    pressed = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
+                }
+                text_color = is_checked
+                    ? (self->dark_mode_ ? theme::BTN_TEXT_DARK : theme::BTN_TEXT_LIGHT)
+                    : (self->dark_mode_ ? theme::TAB_UNSEL_TEXT_DARK : theme::TAB_UNSEL_TEXT_LIGHT);
+                draw_themed_button(dis, bg, pressed, text_color, parent_bg);
+            } else {
+                bg = self->dark_mode_ ? theme::BTN_BG_DARK : theme::BTN_BG_LIGHT;
+                pressed = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
+                text_color = self->dark_mode_ ? theme::BTN_TEXT_DARK : theme::BTN_TEXT_LIGHT;
+                draw_themed_button(dis, bg, pressed, text_color, parent_bg);
+            }
             return TRUE;
         }
         break;
@@ -271,6 +329,25 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
 void MainWindow::on_create() {
     font_ = create_system_message_font();
+
+    // --- Layout toggle (left-aligned) ---
+    layout_classic_btn_ = CreateWindowW(L"BUTTON", t("layout.compact").c_str(),
+        WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON | BS_PUSHLIKE | BS_OWNERDRAW,
+        0, 0, 0, 0, hwnd_,
+        (HMENU)(INT_PTR)IDC_LAYOUT_CLASSIC_BTN, nullptr, nullptr);
+    SendMessageW(layout_classic_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
+
+    layout_modern_btn_ = CreateWindowW(L"BUTTON", t("layout.sidebar").c_str(),
+        WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON | BS_PUSHLIKE | BS_OWNERDRAW,
+        0, 0, 0, 0, hwnd_,
+        (HMENU)(INT_PTR)IDC_LAYOUT_MODERN_BTN, nullptr, nullptr);
+    SendMessageW(layout_modern_btn_, WM_SETFONT, (WPARAM)font_, TRUE);
+
+    // Read saved layout preference
+    auto layout_val = config_.get_setting("layout", "compact");
+    use_modern_ = (layout_val == "sidebar" || layout_val == "modern"); // backward compat
+    SendMessageW(use_modern_ ? layout_modern_btn_ : layout_classic_btn_,
+        BM_SETCHECK, BST_CHECKED, 0);
 
     // --- Settings bar (right-aligned) ---
     // These are created with approximate positions; on_size will fix them.
@@ -323,11 +400,13 @@ void MainWindow::on_create() {
     history_ = std::make_unique<HistorySection>(config_,
         [this](const std::wstring& path) { open_single_folder(path); });
 
-    // Tab group section
-    tab_group_ = std::make_unique<TabGroupSection>(config_,
-        [this](const std::vector<std::wstring>& paths, const std::optional<WindowRect>& rect) {
-            open_folders_as_tabs(paths, rect);
-        });
+    // Tab group sections (Compact and Sidebar)
+    auto open_cb = [this](const std::vector<std::wstring>& paths,
+                          const std::optional<WindowRect>& rect) {
+        open_folders_as_tabs(paths, rect);
+    };
+    classic_tab_group_ = std::make_unique<TabGroupSection>(config_, open_cb);
+    modern_tab_group_ = std::make_unique<ModernTabGroupSection>(config_, open_cb);
 
     // Initialize dark mode
     update_dark_mode();
@@ -340,6 +419,10 @@ void MainWindow::on_size(int w, int h) {
     client_w_ = w;
     client_h_ = h;
     int cy = TOP_MARGIN;
+
+    // Layout toggle (left-aligned)
+    MoveWindow(layout_classic_btn_, PAD, cy, TOGGLE_BTN_W, ROW_H, TRUE);
+    MoveWindow(layout_modern_btn_, PAD + TOGGLE_BTN_W, cy, TOGGLE_BTN_W, ROW_H, TRUE);
 
     // Settings bar (right-aligned)
     int right = w - PAD;
@@ -375,11 +458,24 @@ void MainWindow::on_size(int w, int h) {
 
     // Tab group section (fills the rest)
     int remaining = h - cy - BOTTOM_MARGIN;
-    if (tab_group_) {
-        if (!IsWindow(tab_group_->tab_view().hwnd())) {
-            tab_group_->create(hwnd_, PAD, cy, w - PAD * 2, remaining);
+
+    // Compact layout
+    if (classic_tab_group_) {
+        if (!classic_tab_group_->is_created()) {
+            classic_tab_group_->create(hwnd_, PAD, cy, w - PAD * 2, remaining);
+            if (use_modern_) classic_tab_group_->show(false);
         } else {
-            tab_group_->resize(PAD, cy, w - PAD * 2, remaining);
+            classic_tab_group_->resize(PAD, cy, w - PAD * 2, remaining);
+        }
+    }
+
+    // Sidebar layout
+    if (modern_tab_group_) {
+        if (!modern_tab_group_->is_created()) {
+            modern_tab_group_->create(hwnd_, PAD, cy, w - PAD * 2, remaining);
+            if (!use_modern_) modern_tab_group_->show(false);
+        } else {
+            modern_tab_group_->resize(PAD, cy, w - PAD * 2, remaining);
         }
     }
 
@@ -403,9 +499,8 @@ void MainWindow::on_close() {
     config_.data().window_geometry = buf;
 
     // Save tab group geometry
-    if (tab_group_) {
-        tab_group_->save_geometry();
-    }
+    auto* active = active_tab_group();
+    if (active) active->save_geometry();
 
     config_.save();
     LOG_INFO("main_window", "Window closed (geometry: %s)", buf);
@@ -414,6 +509,16 @@ void MainWindow::on_close() {
 
 void MainWindow::on_command(WPARAM wParam, LPARAM lParam) {
     int id = LOWORD(wParam);
+
+    // Layout toggle
+    if (id == IDC_LAYOUT_CLASSIC_BTN && HIWORD(wParam) == BN_CLICKED) {
+        if (use_modern_) switch_layout(false);
+        return;
+    }
+    if (id == IDC_LAYOUT_MODERN_BTN && HIWORD(wParam) == BN_CLICKED) {
+        if (!use_modern_) switch_layout(true);
+        return;
+    }
 
     // Timeout changed
     if (id == IDC_SETTINGS_TIMEOUT_COMBO && HIWORD(wParam) == CBN_SELCHANGE) {
@@ -439,8 +544,14 @@ void MainWindow::on_command(WPARAM wParam, LPARAM lParam) {
                 SetWindowTextW(hwnd_, t("app.title").c_str());
                 SetWindowTextW(timeout_label_, t("settings.timeout").c_str());
                 SetWindowTextW(timeout_unit_, t("settings.timeout_unit").c_str());
+                SetWindowTextW(layout_classic_btn_, t("layout.compact").c_str());
+                SetWindowTextW(layout_modern_btn_, t("layout.sidebar").c_str());
                 if (history_) history_->refresh_texts();
-                if (tab_group_) tab_group_->refresh_texts();
+                if (classic_tab_group_) classic_tab_group_->refresh_texts();
+                if (modern_tab_group_) modern_tab_group_->refresh_texts();
+                // Force repaint of toggle buttons
+                InvalidateRect(layout_classic_btn_, nullptr, TRUE);
+                InvalidateRect(layout_modern_btn_, nullptr, TRUE);
                 LOG_INFO("main_window", "Language changed to %s",
                          wide_to_utf8(code).c_str());
             }
@@ -448,9 +559,49 @@ void MainWindow::on_command(WPARAM wParam, LPARAM lParam) {
         return;
     }
 
-    // Forward to sections
+    // Forward to active section
     if (history_ && history_->handle_command(wParam, lParam)) return;
-    if (tab_group_ && tab_group_->handle_command(wParam, lParam)) return;
+    if (use_modern_) {
+        if (modern_tab_group_ && modern_tab_group_->handle_command(wParam, lParam)) return;
+    } else {
+        if (classic_tab_group_ && classic_tab_group_->handle_command(wParam, lParam)) return;
+    }
+}
+
+void MainWindow::switch_layout(bool use_modern) {
+    // Save current state
+    auto* old_section = active_tab_group();
+    std::wstring current_name;
+    if (old_section) {
+        old_section->save_geometry();
+        current_name = old_section->current_tab_name();
+    }
+
+    // Toggle
+    use_modern_ = use_modern;
+    config_.set_setting("layout", use_modern ? "sidebar" : "compact");
+    config_.save();
+
+    // Show/hide
+    if (classic_tab_group_) classic_tab_group_->show(!use_modern);
+    if (modern_tab_group_) modern_tab_group_->show(use_modern);
+
+    // Transfer selection to new section
+    auto* new_section = active_tab_group();
+    if (new_section && !current_name.empty()) {
+        new_section->select_tab(current_name);
+    }
+
+    // Force repaint of toggle buttons
+    InvalidateRect(layout_classic_btn_, nullptr, TRUE);
+    InvalidateRect(layout_modern_btn_, nullptr, TRUE);
+
+    LOG_INFO("main_window", "Layout switched to %s", use_modern ? "sidebar" : "compact");
+}
+
+ITabGroupUI* MainWindow::active_tab_group() {
+    if (use_modern_) return modern_tab_group_.get();
+    return classic_tab_group_.get();
 }
 
 void MainWindow::open_single_folder(const std::wstring& path) {
@@ -541,7 +692,8 @@ void MainWindow::on_tab_open_complete() {
         saved_cursor_ = nullptr;
     }
     SetCursor(LoadCursorW(nullptr, IDC_ARROW));
-    if (tab_group_) tab_group_->set_opening(false);
+    auto* active = active_tab_group();
+    if (active) active->set_opening(false);
     LOG_INFO("main_window", "Tab opening complete");
 }
 
@@ -654,10 +806,9 @@ void MainWindow::update_dark_mode() {
         dark_edit_brush_ = CreateSolidBrush(RGB(0x3C, 0x3C, 0x3C));
     }
 
-    // Propagate dark mode to tab view
-    if (tab_group_) {
-        tab_group_->tab_view().set_dark_mode(dark_mode_);
-    }
+    // Propagate dark mode to both sections
+    if (classic_tab_group_) classic_tab_group_->set_dark_mode(dark_mode_);
+    if (modern_tab_group_) modern_tab_group_->set_dark_mode(dark_mode_);
 
     InvalidateRect(hwnd_, nullptr, TRUE);
     LOG_INFO("main_window", "Dark mode: %s", dark_mode_ ? "on" : "off");

@@ -9,25 +9,48 @@ namespace fto {
 
 struct WindowRect;
 
-class TabGroupSection {
+// Abstract interface for tab group UI (Compact / Sidebar)
+using OpenTabsCallback = std::function<void(
+    const std::vector<std::wstring>& paths,
+    const std::optional<WindowRect>& rect)>;
+
+class ITabGroupUI {
 public:
-    using OpenTabsCallback = std::function<void(
-        const std::vector<std::wstring>& paths,
-        const std::optional<WindowRect>& rect)>;
+    virtual ~ITabGroupUI() = default;
+    virtual void create(HWND parent, int x, int y, int w, int h) = 0;
+    virtual void resize(int x, int y, int w, int h) = 0;
+    virtual bool handle_command(WPARAM wParam, LPARAM lParam) = 0;
+    virtual bool handle_notify(WPARAM wParam, LPARAM lParam) { (void)wParam; (void)lParam; return false; }
+    virtual void save_geometry() = 0;
+    virtual void refresh_texts() = 0;
+    virtual std::wstring current_tab_name() const = 0;
+    virtual bool is_opening() const = 0;
+    virtual void set_opening(bool v) = 0;
+    virtual void set_dark_mode(bool dark) = 0;
+    virtual void show(bool visible) = 0;
+    virtual void select_tab(const std::wstring& name) = 0;
+};
 
+// Compact layout: button bar + FlowLayout tab buttons + path listbox
+class TabGroupSection : public ITabGroupUI {
+public:
     TabGroupSection(ConfigManager& config, OpenTabsCallback on_open_tabs);
-    ~TabGroupSection() { if (font_) DeleteObject(font_); }
+    ~TabGroupSection() override { if (font_) DeleteObject(font_); }
 
-    void create(HWND parent, int x, int y, int w, int h);
-    void resize(int x, int y, int w, int h);
-    bool handle_command(WPARAM wParam, LPARAM lParam);
-
-    std::wstring current_tab_name() const { return current_tab_; }
+    void create(HWND parent, int x, int y, int w, int h) override;
+    void resize(int x, int y, int w, int h) override;
+    bool handle_command(WPARAM wParam, LPARAM lParam) override;
+    void save_geometry() override;
+    void refresh_texts() override;
+    std::wstring current_tab_name() const override { return current_tab_; }
     TabView& tab_view() { return tab_view_; }
-    bool is_opening() const { return opening_; }
-    void set_opening(bool v) { opening_ = v; }
-    void save_geometry();
-    void refresh_texts();
+    bool is_opening() const override { return opening_; }
+    void set_opening(bool v) override { opening_ = v; }
+    void set_dark_mode(bool dark) override { tab_view_.set_dark_mode(dark); }
+    void show(bool visible) override;
+    void select_tab(const std::wstring& name) override;
+
+    bool is_created() const { return parent_ != nullptr; }
 
 private:
     void load_tabs_from_config();
@@ -83,6 +106,9 @@ private:
 
     // Open as Tabs
     HWND open_btn_ = nullptr;
+
+    // All controls for show/hide
+    std::vector<HWND> all_controls_;
 
     static constexpr int MIN_WINDOW_WIDTH = 528;
     static constexpr int MIN_WINDOW_HEIGHT = 308;

@@ -2,6 +2,7 @@
 #include "config.h"
 #include "history_section.h"
 #include "tab_group_section.h"
+#include "modern_tab_group_section.h"
 #include "theme.h"
 #include <windows.h>
 #include <memory>
@@ -38,16 +39,24 @@ private:
     void update_dark_mode();
     HBRUSH handle_ctlcolor(HDC hdc, HWND ctrl);
 
+    void switch_layout(bool use_modern);
+    ITabGroupUI* active_tab_group();
+
     std::wstring build_toast_text(int current, int total, const std::wstring& path);
     void join_open_thread();
 
     ConfigManager& config_;
     bool dark_mode_ = false;
+    bool use_modern_ = false;
     HBRUSH dark_bg_brush_ = nullptr;
     HBRUSH dark_edit_brush_ = nullptr;
     HWND hwnd_ = nullptr;
     HFONT font_ = nullptr;
     HFONT toast_font_ = nullptr;
+
+    // Layout toggle buttons
+    HWND layout_classic_btn_ = nullptr;
+    HWND layout_modern_btn_ = nullptr;
 
     // Settings bar
     HWND timeout_label_ = nullptr;
@@ -61,7 +70,8 @@ private:
 
     // Sections
     std::unique_ptr<HistorySection> history_;
-    std::unique_ptr<TabGroupSection> tab_group_;
+    std::unique_ptr<TabGroupSection> classic_tab_group_;
+    std::unique_ptr<ModernTabGroupSection> modern_tab_group_;
 
     // Toast overlay
     HWND toast_hwnd_ = nullptr;

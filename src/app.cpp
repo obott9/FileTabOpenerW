@@ -33,10 +33,31 @@ void apply_dark_title_bar(HWND hwnd) {
     DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
 }
 
+static const wchar_t* SINGLE_INSTANCE_MUTEX = L"FileTabOpenerW_SingleInstance_Mutex";
+
 App::App() {}
-App::~App() {}
+App::~App() {
+    if (mutex_) {
+        ReleaseMutex(mutex_);
+        CloseHandle(mutex_);
+    }
+}
 
 bool App::init() {
+    // Single instance check
+    mutex_ = CreateMutexW(nullptr, TRUE, SINGLE_INSTANCE_MUTEX);
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        // Another instance is running — bring its window to foreground
+        HWND existing = FindWindowW(L"FileTabOpenerMainWindow", nullptr);
+        if (existing) {
+            if (IsIconic(existing)) ShowWindow(existing, SW_RESTORE);
+            SetForegroundWindow(existing);
+        }
+        CloseHandle(mutex_);
+        mutex_ = nullptr;
+        return false;
+    }
+
     // Initialize COM (STA for UI Automation)
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {

@@ -21,6 +21,7 @@ public:
 private:
     ConfigManager config_;
     std::unique_ptr<MainWindow> window_;
+    HANDLE mutex_ = nullptr;
 };
 
 } // namespace fto

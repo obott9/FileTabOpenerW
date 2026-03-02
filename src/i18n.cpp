@@ -205,6 +205,18 @@ static const Entry g_strings[] = {
     {"path.remove", L"zh_TW", L"- \x79FB\x9664\x8DEF\x5F91"},
     {"path.remove", L"zh_CN", L"- \x5220\x9664\x8DEF\x5F84"},
 
+    {"path.open_explorer", L"en", L"Open in Explorer"},
+    {"path.open_explorer", L"ja", L"\x30A8\x30AF\x30B9\x30D7\x30ED\x30FC\x30E9\x30FC\x3067\x958B\x304F"},
+    {"path.open_explorer", L"ko", L"\xD0D0\xC0C9\xAE30\xC5D0\xC11C \xC5F4\xAE30"},
+    {"path.open_explorer", L"zh_TW", L"\x5728\x6A94\x6848\x7E3D\x7BA1\x4E2D\x958B\x555F"},
+    {"path.open_explorer", L"zh_CN", L"\x5728\x8D44\x6E90\x7BA1\x7406\x5668\x4E2D\x6253\x5F00"},
+
+    {"path.copy_path", L"en", L"Copy Path"},
+    {"path.copy_path", L"ja", L"\x30D1\x30B9\x3092\x30B3\x30D4\x30FC"},
+    {"path.copy_path", L"ko", L"\xACBD\xB85C \xBCF5\xC0AC"},
+    {"path.copy_path", L"zh_TW", L"\x8907\x88FD\x8DEF\x5F91"},
+    {"path.copy_path", L"zh_CN", L"\x590D\x5236\x8DEF\x5F84"},
+
     {"path.browse", L"en", L"Browse..."},
     {"path.browse", L"ja", L"\x53C2\x7167..."},
     {"path.browse", L"ko", L"\xCC3E\xC544\xBCF4\xAE30..."},
@@ -313,6 +325,35 @@ static const Entry g_strings[] = {
     {"settings.timeout_unit", L"ko", L"\xCD08"},
     {"settings.timeout_unit", L"zh_TW", L"\x79D2"},
     {"settings.timeout_unit", L"zh_CN", L"\x79D2"},
+
+    // --- Layout toggle ---
+    {"layout.compact", L"en", L"Compact"},
+    {"layout.compact", L"ja", L"\x30B3\x30F3\x30D1\x30AF\x30C8"},
+    {"layout.compact", L"ko", L"\xAC04\xACB0"},
+    {"layout.compact", L"zh_TW", L"\x7CBE\x7C21"},
+    {"layout.compact", L"zh_CN", L"\x7D27\x51D1"},
+    {"layout.sidebar", L"en", L"Sidebar"},
+    {"layout.sidebar", L"ja", L"\x30B5\x30A4\x30C9\x30D0\x30FC"},
+    {"layout.sidebar", L"ko", L"\xC0AC\xC774\xB4DC\xBC14"},
+    {"layout.sidebar", L"zh_TW", L"\x5074\x908A\x6B04"},
+    {"layout.sidebar", L"zh_CN", L"\x4FA7\x8FB9\x680F"},
+
+    // --- Modern layout ---
+    {"modern.select_group", L"en", L"Select a tab group"},
+    {"modern.select_group", L"ja", L"\x30BF\x30D6\x30B0\x30EB\x30FC\x30D7\x3092\x9078\x629E"},
+    {"modern.select_group", L"ko", L"\xD0ED \xADF8\xB8F9\xC744 \xC120\xD0DD\xD558\xC138\xC694"},
+    {"modern.select_group", L"zh_TW", L"\x8ACB\x9078\x64C7\x5206\x9801\x7D44"},
+    {"modern.select_group", L"zh_CN", L"\x8BF7\x9009\x62E9\x6807\x7B7E\x7EC4"},
+    {"modern.new_group_placeholder", L"en", L"New group name"},
+    {"modern.new_group_placeholder", L"ja", L"\x65B0\x3057\x3044\x30B0\x30EB\x30FC\x30D7\x540D"},
+    {"modern.new_group_placeholder", L"ko", L"\xC0C8 \xADF8\xB8F9 \xC774\xB984"},
+    {"modern.new_group_placeholder", L"zh_TW", L"\x65B0\x7D44\x540D\x7A31"},
+    {"modern.new_group_placeholder", L"zh_CN", L"\x65B0\x7EC4\x540D\x79F0"},
+    {"modern.add", L"en", L"+"},
+    {"modern.add", L"ja", L"+"},
+    {"modern.add", L"ko", L"+"},
+    {"modern.add", L"zh_TW", L"+"},
+    {"modern.add", L"zh_CN", L"+"},
 };
 // clang-format on
 

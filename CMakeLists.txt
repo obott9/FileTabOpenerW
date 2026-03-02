@@ -17,6 +17,7 @@ add_executable(FileTabOpenerW WIN32
     src/tab_group_section.cpp
     src/tab_view.cpp
     src/input_dialog.cpp
+    src/modern_tab_group_section.cpp
     res/app.rc
 )
 
@@ -43,6 +44,7 @@ target_link_libraries(FileTabOpenerW PRIVATE
     comdlg32
     shell32
     dwmapi
+    uxtheme
 )
 
 # MSVC specific settings
