@@ -597,9 +597,9 @@ void MainWindow::switch_layout(bool use_modern) {
     if (classic_tab_group_) classic_tab_group_->show(!use_modern);
     if (modern_tab_group_) modern_tab_group_->show(use_modern);
 
-    // Transfer selection to new section
+    // Transfer selection to new section (select_tab handles empty name as fallback to first)
     auto* new_section = active_tab_group();
-    if (new_section && !current_name.empty()) {
+    if (new_section) {
         new_section->select_tab(current_name);
     }
 

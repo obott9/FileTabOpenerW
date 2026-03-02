@@ -443,7 +443,13 @@ void ModernTabGroupSection::show(bool visible) {
 }
 
 void ModernTabGroupSection::select_tab(const std::wstring& name) {
-    if (name.empty()) return;
+    if (name.empty()) {
+        // Select first group as fallback
+        if (!config_.data().tab_groups.empty()) {
+            select_tab(config_.data().tab_groups[0].name);
+        }
+        return;
+    }
     int count = ListView_GetItemCount(sidebar_);
     for (int i = 0; i < count; i++) {
         wchar_t buf[256];
@@ -452,6 +458,15 @@ void ModernTabGroupSection::select_tab(const std::wstring& name) {
             ListView_SetItemState(sidebar_, i, LVIS_SELECTED | LVIS_FOCUSED,
                 LVIS_SELECTED | LVIS_FOCUSED);
             ListView_EnsureVisible(sidebar_, i, FALSE);
+            // Explicitly update state — LVN_ITEMCHANGED may not fire
+            // if the item was already selected (e.g. initial create while hidden)
+            if (current_tab_ != name) {
+                save_geometry();
+                current_tab_ = name;
+                LOG_INFO("modern", "Selected group (explicit): %s",
+                         wide_to_utf8(current_tab_).c_str());
+                refresh_detail();
+            }
             break;
         }
     }
