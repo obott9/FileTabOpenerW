@@ -39,6 +39,15 @@ Download the latest `.exe` from [GitHub Releases](https://github.com/obott9/File
 
 ## Build
 
+### VS Code (Recommended)
+
+1. Install the [CMake Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools) extension
+2. Select **CMake: [Release]** from the status bar
+3. Select build target **[FileTabOpenerW]** from the status bar
+4. Click the **Build** button in the status bar (or `Ctrl+Shift+B`)
+
+### Command Line
+
 ```bash
 mkdir build && cd build
 cmake .. -G "Visual Studio 17 2022"

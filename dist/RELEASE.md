@@ -3,8 +3,9 @@
 ## ビルド環境
 
 - Windows 11
-- Visual Studio 2022 (MSVC)
-- CMake 3.20+
+- VS Code + [CMake Tools 拡張](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools)（推奨）
+- Visual Studio 2022 (MSVC ツールチェーン)
+- CMake 3.20+（VS2022 同梱のものを使用）
 
 ## リリースビルド作成
 
@@ -13,6 +14,14 @@
 `res/app.rc` 内の `FILEVERSION`, `PRODUCTVERSION`, `FileVersion`, `ProductVersion` を全て更新する（4箇所）。
 
 ### 2. Release ビルド
+
+#### VS Code（推奨）
+
+1. ステータスバーで **CMake: [Release]** を選択
+2. ビルドターゲット **[FileTabOpenerW]** を選択（ALL_BUILD ではなく）
+3. **ビルド** ボタンをクリック
+
+#### コマンドライン
 
 ```powershell
 $cmake = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"

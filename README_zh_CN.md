@@ -39,6 +39,15 @@
 
 ## 构建
 
+### VS Code（推荐）
+
+1. 安装 [CMake Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools) 扩展
+2. 在状态栏选择 **CMake: [Release]**
+3. 在状态栏选择构建目标 **[FileTabOpenerW]**
+4. 点击状态栏的 **构建** 按钮（或 `Ctrl+Shift+B`）
+
+### 命令行
+
 ```bash
 mkdir build && cd build
 cmake .. -G "Visual Studio 17 2022"
