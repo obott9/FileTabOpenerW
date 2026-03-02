@@ -278,16 +278,16 @@ LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
             // Layout toggle buttons: selected state = pressed appearance
             if (dis->CtlID == IDC_LAYOUT_CLASSIC_BTN || dis->CtlID == IDC_LAYOUT_MODERN_BTN) {
-                bool is_checked = (SendMessageW(dis->hwndItem, BM_GETCHECK, 0, 0) == BST_CHECKED);
+                bool is_checked = (dis->CtlID == IDC_LAYOUT_MODERN_BTN) ? self->use_modern_ : !self->use_modern_;
                 if (is_checked) {
-                    bg = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
+                    bg = self->dark_mode_ ? theme::LAYOUT_ACTIVE_BG_DARK : theme::LAYOUT_ACTIVE_BG_LIGHT;
                     pressed = bg;
                 } else {
                     bg = self->dark_mode_ ? theme::TAB_UNSEL_BG_DARK : theme::TAB_UNSEL_BG_LIGHT;
-                    pressed = self->dark_mode_ ? theme::BTN_PRESSED_DARK : theme::BTN_PRESSED_LIGHT;
+                    pressed = self->dark_mode_ ? theme::TAB_UNSEL_PRESSED_DARK : theme::TAB_UNSEL_PRESSED_LIGHT;
                 }
                 text_color = is_checked
-                    ? (self->dark_mode_ ? theme::BTN_TEXT_DARK : theme::BTN_TEXT_LIGHT)
+                    ? (self->dark_mode_ ? theme::LAYOUT_ACTIVE_TEXT_DARK : theme::LAYOUT_ACTIVE_TEXT_LIGHT)
                     : (self->dark_mode_ ? theme::TAB_UNSEL_TEXT_DARK : theme::TAB_UNSEL_TEXT_LIGHT);
                 draw_themed_button(dis, bg, pressed, text_color, parent_bg);
                 // Accent underline on the active layout button
