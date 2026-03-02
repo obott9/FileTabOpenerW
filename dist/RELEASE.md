@@ -91,6 +91,24 @@ gh release edit vX.X.X --draft=false
 5言語（English / 日本語 / 한국어 / 简体中文 / 繁體中文）で記載する。
 過去のリリースを参考にすること: `gh release view vX.X.X`
 
+各言語ブロックの末尾に **サポートセクション** を含めること：
+
+```markdown
+### Support
+If you find this app useful, please ⭐ [star the repo](https://github.com/obott9/FileTabOpenerW)!
+
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-♥-ea4aaa)](https://github.com/sponsors/obott9) [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-☕-orange)](https://buymeacoffee.com/obott9)
+```
+
+日本語例：
+
+```markdown
+### サポート
+このアプリが役に立ったら、ぜひ ⭐ [GitHub でスター](https://github.com/obott9/FileTabOpenerW)をお願いします！
+
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-♥-ea4aaa)](https://github.com/sponsors/obott9) [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-☕-orange)](https://buymeacoffee.com/obott9)
+```
+
 ## ファイル構成
 
 ```
