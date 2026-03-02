@@ -122,7 +122,9 @@ Claude 提供了以下支援：
 
 ## 支持
 
-如果您覺得這個應用程式有用，請我喝杯咖啡吧！
+如果您覺得這個應用程式有用，請在 GitHub 上給它一顆星！
+
+[![GitHub Stars](https://img.shields.io/github/stars/obott9/FileTabOpenerW?style=social)](https://github.com/obott9/FileTabOpenerW)
 
 [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-♥-ea4aaa)](https://github.com/sponsors/obott9)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-☕-orange)](https://buymeacoffee.com/obott9)
